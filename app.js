@@ -7,6 +7,7 @@ const socketIOJwt = require("socketio-jwt");
 const { Conversation } = require("./models/conversation");
 const { Message } = require("./models/messages");
 const { User } = require("./models/user");
+const {handlingError, serverErrorHandler} = require('./controllers/error')
 const config = require("config");
 const cors = require('cors');
 
@@ -15,20 +16,12 @@ const express = require("express");
 const app = express();
 
 app.use(cors());
-// app.use((req, res , next)=>{
-//   res.header('Access-Control-Allow-Origin',"*");
-//   res.header(
-//     'Access-Control-Allow-Headers',
-//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-//   );
-//   if(req.method === 'OPTIONS'){
-//     res.header('Access-Control-Allow-Methods', 'PUT, POST, PATCH, DELETE, GET');
-//   return res.status(200).json({})}
-// })
 
-app.use("/", express.json());
+app.use(express.json());
 app.use('/user', userRoute);
-app.use(conversationRoute);
+app.use('/conversations',conversationRoute);
+app.use(handlingError,serverErrorHandler)
+app.use(serverErrorHandler)
 
 const port = process.env.PORT || 3000;
 const uri =
