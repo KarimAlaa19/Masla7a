@@ -1,6 +1,6 @@
-const { User } = require("../models/user");
-const Customer = require("../models/customer-model").Customer;
-const { ServiceProvider } = require("../models/service-provider-model");
+const User = require("../models/user-model");
+const Customer = require("../models/customer-model");
+const ServiceProvider = require("../models/service-provider-model");
 const validator = require("../validators/user-validator");
 const config = require("config");
 const jwt = require("jsonwebtoken");
@@ -14,7 +14,8 @@ const addUser = async (req, res) => {
   let user = await User.findOne({ email: req.body.email });
   if (user) {
     if (user.isServiceProvider === false)
-      return res.status(400)
+      return res
+        .status(400)
         .json({ message: "This Email has already registered as customer" });
     else {
       return res.status(400).json({
@@ -22,24 +23,42 @@ const addUser = async (req, res) => {
       });
     }
   }
-  const used_username = await User.findOne({username : req.body.username})
-  if(used_username) return res.status(400).json({ message: "This username is already used, choose another one" });
-  
-  //Creating a User
-  user = await User.create(_.pick(req.body,["name",'email','password','age','nationalID','phone_number','gender','username']));
+  const used_userName = await User.findOne({ userName: req.body.userName });
+  if (used_userName)
+    return res
+      .status(400)
+      .json({ message: "This userName is already used, choose another one" });
 
-  //Reading files
-  for (var i = 0; i < req.files.length; i++) {
-    if (req.files[i].fieldname === "profilePic") {
-      const result = await cloud.uploads(req.files[i].path);
-      user.profilePic = result.url;
-      fs.unlinkSync(req.files[i].path);
+  //Creating a User
+  user = await User.create(
+    _.pick(req.body, [
+      "name",
+      "email",
+      "password",
+      "age",
+      "nationalID",
+      "phone_number",
+      "gender",
+      "userName",
+    ])
+  );
+
+  console.log("in add user " + user);
+  // Reading files
+  if (req.files) {
+    for (var i = 0; i < req.files.length; i++) {
+      if (req.files[i].fieldname === "profilePic") {
+        const result = await cloud.uploads(req.files[i].path);
+        user.profilePic = result.url;
+        fs.unlinkSync(req.files[i].path);
+      }
     }
   }
   //Encrypting the password
   const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salt);
   await user.save();
+  console.log(user._id);
   return user;
 };
 
@@ -50,50 +69,58 @@ exports.addingUser = async (req, res, next) => {
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   let user = await addUser(req, res);
-
-  //Adding as Customer
-  const customer = await new Customer({
-    userID: user._id,
-  });
-  await customer.save();
-  //Sending genereted token
-  let token = user.generateAuthToken();
-  res
-    .header("x-auth-token", token)
-    .send(_.pick(user, ["_id", "name", "email"]));
+  if (user._id) {
+    //Adding as Customer
+    const customer = await new Customer({
+      userID: user._id,
+    });
+    await customer.save();
+    //Sending genereted token
+    let token = user.generateAuthToken();
+    res
+      .header("x-auth-token", token)
+      .send(_.pick(user, ["_id", "name", "email", "isServiceProvider"]));
+  }
 };
 
 //#endregion
 
 //#region Service provider Sign Up
 exports.addServiceProvider = async (req, res, next) => {
-  //console.log(req.body)
   const { error } = validator.validateServiceProvider(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   //Adding as User
   let user = await addUser(req, res);
-  console.log("Line 76 Adding service provider"+user);
   user.isServiceProvider = true;
   await user.save();
+  if (user._id) {
+    //Adding as Service Provider
+    let serviceProvider = await ServiceProvider.create({
+      userID: user._id,
+      userName: user.userName,
+      description: req.body.description,
+      category: req.body.category,
+      serviceName: req.body.serviceName,
+      servicePrice: req.body.servicePrice,
+      address: req.body.address,
+    });
 
-  //Adding as Service Provider
-  let serviceProvider = await ServiceProvider.create({
-    userID: user._id,
-    description: req.body.description,
-    category: req.body.category,
-    price: req.body.price,
-  });
-
-  for (var i = 0; i < req.files.length; i++) {
-    if (req.files[i].fieldname === "gallery") {
-      let cloudStr = await cloud.uploads(req.files[i].path);
-      serviceProvider.gallery.push(cloudStr.url);
-      fs.unlinkSync(req.files[i].path);
+    if (req.files) {
+      for (var i = 0; i < req.files.length; i++) {
+        if (req.files[i].fieldname === "gallery") {
+          let cloudStr = await cloud.uploads(req.files[i].path);
+          serviceProvider.gallery.push(cloudStr.url);
+          fs.unlinkSync(req.files[i].path);
+        }
+      }
     }
+    await serviceProvider.save();
+    let token = user.generateAuthToken();
+    res
+      .header("x-auth-token", token)
+      .json({ message: "Successfully you became a service provider" });
   }
-  await serviceProvider.save();
-  res.json({ message: "Successfully you became a service provider" });
 };
 //#endregion
 

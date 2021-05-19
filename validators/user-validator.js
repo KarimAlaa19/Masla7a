@@ -18,10 +18,10 @@ exports.validateSignUp = (user) => {
         email: Joi.string().min(10).max(255).email().required(),
         password: passwordComplexity(complexityOptions).required(),
         age: Joi.number().min(16).max(100).required(),
-        nationalID : Joi.string().min(14).max(28).required(),
-        phone_number: Joi.string().min(13).max(18).required(),
-        gender : Joi.string().required(),
-        username: Joi.string().required()
+        nationalID: Joi.string().min(14).max(28).required(),
+        phone_number: Joi.string().min(11).max(18).required(),
+        gender: Joi.string().required(),
+        userName: Joi.string().required()
     });
 
     return schema.validate(user);
@@ -36,19 +36,22 @@ exports.validateLogIn = (user) => {
     return schema.validate(user);
 };
 
-exports.validateServiceProvider = function validateServiceProvider (user) {
+exports.validateServiceProvider = function validateServiceProvider(user) {
     const schema = Joi.object({
         name: Joi.string().min(3).max(55).required(),
         email: Joi.string().min(10).max(255).email().required(),
         password: passwordComplexity(complexityOptions).required(),
         age: Joi.number().min(16).max(100).required(),
-        nationalID : Joi.string().min(14).max(28).required(),
-        phone_number: Joi.string().min(13).max(18).required(),
-        gender : Joi.string().required(),
-        username: Joi.string().required(),
+        nationalID: Joi.string().min(14).max(28).required(),
+        phone_number: Joi.string().min(11).max(18).required(),
+        gender: Joi.string().required(),
+        serviceName: Joi.string().min(3).required(),
         category: Joi.string().required(),
         description: Joi.string().min(20).max(1024).required(),
-        price: Joi.number().required(),
+        servicePrice: Joi.number().required(),
+        address: Joi.string().required(),
+        userName: Joi.string().required()
+
     });
     return schema.validate(user);
 };
