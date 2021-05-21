@@ -9,11 +9,6 @@ const service_provider_schema = new mongoose.Schema({
         required: true,
         ref: 'User'
     },
-    userName: {
-        type: String,
-        ref: 'User',
-        required: true
-    },
     gallery: [{
         type: String
     }],

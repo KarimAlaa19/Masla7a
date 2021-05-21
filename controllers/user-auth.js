@@ -1,5 +1,6 @@
 const User = require("../models/user-model");
 const Customer = require("../models/customer-model");
+const Category = require('../models/category-model');
 const ServiceProvider = require("../models/service-provider-model");
 const validator = require("../validators/user-validator");
 const config = require("config");
@@ -42,8 +43,6 @@ const addUser = async (req, res) => {
       "userName",
     ])
   );
-
-  console.log("in add user " + user);
   // Reading files
   if (req.files) {
     for (var i = 0; i < req.files.length; i++) {
@@ -95,12 +94,13 @@ exports.addServiceProvider = async (req, res, next) => {
   user.isServiceProvider = true;
   await user.save();
   if (user._id) {
+    const category = await Category.findOne({name: req.body.category});
     //Adding as Service Provider
     let serviceProvider = await ServiceProvider.create({
       userID: user._id,
       userName: user.userName,
       description: req.body.description,
-      category: req.body.category,
+      category: category,
       serviceName: req.body.serviceName,
       servicePrice: req.body.servicePrice,
       address: req.body.address,
@@ -162,4 +162,27 @@ exports.authUser = async (req, res, next) => {
   res.send(token);
 };
 
+//#endregion
+
+//#region Getting profile information
+exports.getUserInfo = async (req, res , next)=>{
+  const userID = req.user._id;
+  const user = await User.findById(userID)
+  if(!user.isServiceProvider)
+  return res.status(401).json({message: 'Not allowed'});
+
+  const userInfo = await User.findById(userID).populate('users').select('name userName profilePic gallery availability gender age')
+  console.log(userInfo)
+  res.status(200).send(userInfo);
+}
+//#endregion
+
+//#region change profile picture
+exports.changeProfilePic = async (req, res , next)=>{
+  const userID = req.user._id;
+  const user = await User.findByIdAndUpdate(userID, { profilePic: req.body.profilePic }, {
+    new: true
+  });
+  res.status(200).send(user);
+}
 //#endregion

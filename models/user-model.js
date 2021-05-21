@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const config = require('config');
 const jwt = require('jsonwebtoken');
+const pagination = require('mongoose-paginate-v2')
 
 
 const userSchema = new mongoose.Schema({
@@ -67,6 +68,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         minlength: 11,
         required: true
+    },
+    availability: {
+        type: String,
+        enum: ['online','offline','busy'],
+        default: 'offline'
     }
 });
 
@@ -81,4 +87,5 @@ userSchema.methods.generateAuthToken = function () {
     return token;
 }
 
+userSchema.plugin(pagination);
 module.exports = mongoose.model('User', userSchema);;

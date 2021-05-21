@@ -2,17 +2,20 @@ const { Conversation } = require("../models/conversation");
 const { Message } = require("../models/messages");
 const _ = require("lodash");
 const mongoose = require('mongoose')
+ //status
 
 exports.fetchAll = async (req, res, next) => {
   const conversations = await Conversation.find(
-    req.allowPagination,
     { users: req.user._id },
+    req.allowPagination,
     {
+      sort: 'updatedAt',
       populate: [{ path: "users", select: "name profilePic" }, "lastMessage"],
     }
   );
+  console.log(conversations)
   res.status(200).send(conversations);
-};
+}; 
 
 exports.fetchMessages = async (req, res, next) => {
   if(req.params.id.length != 24 )

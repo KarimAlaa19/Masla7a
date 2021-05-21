@@ -1,5 +1,6 @@
+
 const express = require('express');
-const { addingUser, addServiceProvider, authUser } = require('../controllers/user-auth');
+const { addingUser, addServiceProvider, authUser, extractingToken, getUserInfo } = require('../controllers/user-auth');
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
@@ -147,7 +148,11 @@ router.post('/service_provider/sign_up', multerConfig, addServiceProvider);
   *     description: Validation error
   */
  //#endregion
-//User login............PATH: 'user/login
+//User login............PATH: 'accounts/login
 router.post('/login', authUser);
+
+
+//User login............PATH: 'accounts/my-profile
+router.get('/my-profile', extractingToken, getUserInfo);
 
 module.exports = router;

@@ -3,18 +3,23 @@ const mongoose = require("mongoose");
 const authRouter = require('./routes/user-auth-routes');
 const categoryRouter = require('./routes/category-routes');
 const conversationRouter = require('./routes/conversation');
+const adminRoute = require('./routes/admin')
 const {handlingError, serverErrorHandler} = require('./controllers/error')
 const config = require("config");
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUI = require('swagger-ui-express');
 const cors = require('cors');
-
 const express = require("express");
 
 const app = express();
 
-app.use(cors());
-
+var corsOption = {
+  origin: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  exposedHeaders: ['x-auth-token']
+};
+app.use(cors(corsOption));
 
 const swaggerOptions={
   definition:{
@@ -31,6 +36,7 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs',swaggerUI.serve,swaggerUI.setup(swaggerDocs));
 
 app.use(express.json());
+app.use('/admin/control',adminRoute);
 app.use('/accounts', authRouter);
 app.use('/conversations',conversationRouter);
 app.use('/categories', categoryRouter);
