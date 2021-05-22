@@ -124,9 +124,6 @@ const router = express.Router();
 // PATH '/accounts/sign-up'
 router.post('/sign-up', multerConfig, addingUser);
 
-//Adding a service provider..........PATH:'user/service_provider/sign_up'
-//router.post('/service_provider/sign_up', multerConfig, addServiceProvider);
-
 //#region POST a new User with swagger
  /**
   * @swagger

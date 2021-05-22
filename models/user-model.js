@@ -98,6 +98,14 @@ const userSchema = new mongoose.Schema({
     serviceId: {
         type: mongoose.Types.ObjectId,
         ref: 'Service'
+    },
+    availability:{
+        type: String,
+        enum: ['online',
+            'offline',
+            'busy'],
+        default: 'offline',
+        required: true
     }
 });
 

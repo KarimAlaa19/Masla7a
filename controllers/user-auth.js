@@ -143,7 +143,7 @@ exports.authUser = async (req, res, next) => {
 exports.getUserInfo = async (req, res, next) => {
   const userID = req.user._id;
   const user = await User.findById(userID);
-  if (!user.isServiceProvider)
+  if (!user.role==='serviceProvider')
     return res.status(401).json({ message: "Not allowed" });
 
   const userInfo = await User.findById(userID)
