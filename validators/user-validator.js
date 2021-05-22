@@ -21,7 +21,9 @@ exports.validateSignUp = (user) => {
         nationalID: Joi.string().min(14).max(28).required(),
         phone_number: Joi.string().min(11).max(18).required(),
         gender: Joi.string().required(),
-        userName: Joi.string().required()
+        userName: Joi.string().required(),
+        role: Joi.string().required()
+
     });
 
     return schema.validate(user);
@@ -50,8 +52,8 @@ exports.validateServiceProvider = function validateServiceProvider(user) {
         description: Joi.string().min(20).max(1024).required(),
         servicePrice: Joi.number().required(),
         address: Joi.string().required(),
-        userName: Joi.string().required()
-
+        userName: Joi.string().required(),
+        role: Joi.string().required() 
     });
     return schema.validate(user);
 };

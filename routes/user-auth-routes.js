@@ -1,6 +1,6 @@
 
 const express = require('express');
-const { addingUser, addServiceProvider, authUser, extractingToken, getUserInfo } = require('../controllers/user-auth');
+const { addingUser, authUser, extractingToken, getUserInfo } = require('../controllers/user-auth');
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
@@ -125,7 +125,7 @@ const router = express.Router();
 router.post('/sign-up', multerConfig, addingUser);
 
 //Adding a service provider..........PATH:'user/service_provider/sign_up'
-router.post('/service_provider/sign_up', multerConfig, addServiceProvider);
+//router.post('/service_provider/sign_up', multerConfig, addServiceProvider);
 
 //#region POST a new User with swagger
  /**

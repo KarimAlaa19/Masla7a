@@ -1,127 +1,102 @@
+
 const User = require("../models/user-model");
-const Customer = require("../models/customer-model");
-const Category = require('../models/category-model');
-const ServiceProvider = require("../models/service-provider-model");
+const Service = require("../models/service-model");
+const Category = require("../models/category-model");
 const validator = require("../validators/user-validator");
 const config = require("config");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const multerConfig = require("../images/images-controller/multer");
 const cloud = require("../images/images-controller/cloudinary");
 const fs = require("fs");
 
+//#region handling common functions
 const addUser = async (req, res) => {
-  let user = await User.findOne({ email: req.body.email });
-  if (user) {
-    if (user.isServiceProvider === false)
-      return res
-        .status(400)
-        .json({ message: "This Email has already registered as customer" });
-    else {
-      return res.status(400).json({
-        message: "This Email has already been registered as Service Provider",
-      });
-    }
-  }
-  const used_userName = await User.findOne({ userName: req.body.userName });
-  if (used_userName)
-    return res
-      .status(400)
-      .json({ message: "This userName is already used, choose another one" });
-
-  //Creating a User
-  user = await User.create(
-    _.pick(req.body, [
-      "name",
-      "email",
-      "password",
-      "age",
-      "nationalID",
-      "phone_number",
-      "gender",
-      "userName",
-    ])
-  );
-  // Reading files
-  if (req.files) {
-    for (var i = 0; i < req.files.length; i++) {
-      if (req.files[i].fieldname === "profilePic") {
-        const result = await cloud.uploads(req.files[i].path);
-        user.profilePic = result.url;
-        fs.unlinkSync(req.files[i].path);
-      }
-    }
-  }
-  //Encrypting the password
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(user.password, salt);
-  await user.save();
-  console.log(user._id);
-  return user;
-};
-
-//#region User Sign up
-exports.addingUser = async (req, res, next) => {
-  //validating the data
-  const { error } = validator.validateSignUp(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
-
-  let user = await addUser(req, res);
-  if (user._id) {
-    //Adding as Customer
-    const customer = await new Customer({
-      userID: user._id,
-    });
-    await customer.save();
-    //Sending genereted token
-    let token = user.generateAuthToken();
-    res
-      .header("x-auth-token", token)
-      .send(_.pick(user, ["_id", "name", "email", "isServiceProvider"]));
-  }
-};
-
-//#endregion
-
-//#region Service provider Sign Up
-exports.addServiceProvider = async (req, res, next) => {
-  const { error } = validator.validateServiceProvider(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
-
-  //Adding as User
-  let user = await addUser(req, res);
-  user.isServiceProvider = true;
-  await user.save();
-  if (user._id) {
-    const category = await Category.findOne({name: req.body.category});
-    //Adding as Service Provider
-    let serviceProvider = await ServiceProvider.create({
-      userID: user._id,
-      userName: user.userName,
-      description: req.body.description,
-      category: category,
-      serviceName: req.body.serviceName,
-      servicePrice: req.body.servicePrice,
-      address: req.body.address,
-    });
-
+    let user = await User.findOne({ email: req.body.email });
+    if (user)
+      return res.status(400).json({message: `This Email has been registered before as ${user.role}` });
+  
+    const used_userName = await User.findOne({ userName: req.body.userName });
+  
+    if (used_userName)
+      return res.status(400).json({ message: "This userName is already used, choose another one" });
+  
+    //Creating a User
+    user = await User.create(
+      _.pick(req.body, ["name","email","password","age","nationalID","phone_number","gender","userName","address","role"])
+    );
+  
+    // Reading files
     if (req.files) {
       for (var i = 0; i < req.files.length; i++) {
-        if (req.files[i].fieldname === "gallery") {
-          let cloudStr = await cloud.uploads(req.files[i].path);
-          serviceProvider.gallery.push(cloudStr.url);
+        if (req.files[i].fieldname === "profilePic") {
+          const result = await cloud.uploads(req.files[i].path);
+          user.profilePic = result.url;
           fs.unlinkSync(req.files[i].path);
         }
       }
     }
-    await serviceProvider.save();
-    let token = user.generateAuthToken();
-    res
-      .header("x-auth-token", token)
-      .json({ message: "Successfully you became a service provider" });
+    //Encrypting the password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+    await user.save();
+    return user;
+  };
+//#endregion 
+
+//#region User Sign up
+exports.addingUser = async (req, res, next) => {
+  if (!req.body.role)
+    return res.status(400).json({ message: "ROLE DATA IS MISSING" });
+
+  let user;
+
+  //Normal User Handling
+  if (req.body.role === "customer") {
+    const { error } = validator.validateSignUp(req.body);
+    if (error)
+    return res.status(400).json({ message: error.details[0].message });
+
+    user = await addUser(req, res);
   }
+  
+  //Service Provider and Service Handling
+  if (req.body.role === "serviceProvider") {
+    const { error } = validator.validateServiceProvider(req.body);
+    if (error)
+      return res.status(400).json({ message: error.details[0].message });
+
+      user = await addUser(req, res);
+      await user.save();
+
+      //Adding service
+      const categoryID = await Category.findOne({name: req.body.category});
+      const service = await Service({
+        serviceName: req.body.serviceName,
+        categoryId: categoryID,
+        serviceProviderId: user._id,
+        servicePrice: req.body.servicePrice,
+        description: req.body.description
+      }).save();
+
+      if (req.files) {
+        for (var i = 0; i < req.files.length; i++) {
+          if (req.files[i].fieldname === "gallery") {
+            let cloudStr = await cloud.uploads(req.files[i].path);
+            service.gallery.push(cloudStr.url);
+            fs.unlinkSync(req.files[i].path);
+          }
+        }
+      }
+      await service.save();
+      }
+  //Sending genereted token
+  let token = user.generateAuthToken();
+  res
+    .header("x-auth-token", token)
+    .send(_.pick(user, ["_id", "name", "email", "isServiceProvider"]));
 };
+
 //#endregion
 
 //#region Extracting Token Data
@@ -165,24 +140,30 @@ exports.authUser = async (req, res, next) => {
 //#endregion
 
 //#region Getting profile information
-exports.getUserInfo = async (req, res , next)=>{
+exports.getUserInfo = async (req, res, next) => {
   const userID = req.user._id;
-  const user = await User.findById(userID)
-  if(!user.isServiceProvider)
-  return res.status(401).json({message: 'Not allowed'});
+  const user = await User.findById(userID);
+  if (!user.isServiceProvider)
+    return res.status(401).json({ message: "Not allowed" });
 
-  const userInfo = await User.findById(userID).populate('users').select('name userName profilePic gallery availability gender age')
-  console.log(userInfo)
+  const userInfo = await User.findById(userID)
+    .populate("users")
+    .select("name userName profilePic gallery availability gender age");
+  console.log(userInfo);
   res.status(200).send(userInfo);
-}
+};
 //#endregion
 
 //#region change profile picture
-exports.changeProfilePic = async (req, res , next)=>{
+exports.changeProfilePic = async (req, res, next) => {
   const userID = req.user._id;
-  const user = await User.findByIdAndUpdate(userID, { profilePic: req.body.profilePic }, {
-    new: true
-  });
+  const user = await User.findByIdAndUpdate(
+    userID,
+    { profilePic: req.body.profilePic },
+    {
+      new: true,
+    }
+  );
   res.status(200).send(user);
-}
+};
 //#endregion

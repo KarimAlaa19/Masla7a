@@ -1,7 +1,7 @@
 
 const mongoose = require("mongoose");
 const authRouter = require('./routes/user-auth-routes');
-const categoryRouter = require('./routes/category-routes');
+//const categoryRouter = require('./routes/category-routes');
 const conversationRouter = require('./routes/conversation');
 const adminRoute = require('./routes/admin')
 const {handlingError, serverErrorHandler} = require('./controllers/error')
@@ -39,7 +39,7 @@ app.use(express.json());
 app.use('/admin/control',adminRoute);
 app.use('/accounts', authRouter);
 app.use('/conversations',conversationRouter);
-app.use('/categories', categoryRouter);
+//app.use('/categories', categoryRouter);
 app.use(handlingError,serverErrorHandler)
 app.use(serverErrorHandler)
 
