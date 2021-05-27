@@ -9,7 +9,7 @@ router.use(authcontroller.extractingToken);
 //Path /admin/control/service-providers
 router.get('/service-providers', adminController.getAllServiceProviders);
 
-//Path /admin/control/service-providers/:id
+//Path /admin/control/user/:id
 router.get('/user/:id', adminController.getUser);
 
 //Path /admin/control/customers

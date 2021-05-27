@@ -63,7 +63,7 @@ exports.resetPassword = async (req, res, next) => {
   if (error)return res.status(400).json({ message: error.details[0].message });
 
   let validPassword = await bcrypt.compare(req.body.current_password, user.password);
-  if (!validPassword) return res.status(400).send("Invalid email or password");
+  if (!validPassword) return res.status(400).send("Invalid password");
 
   if(req.body.new_password != req.body.confirm_password)
   return res.status(400).json({message: 'Confirm Password doesnt match new password'});
