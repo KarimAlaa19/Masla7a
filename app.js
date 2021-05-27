@@ -4,6 +4,7 @@ const authRouter = require('./routes/user-auth-routes');
 //const categoryRouter = require('./routes/category-routes');
 const conversationRouter = require('./routes/conversation');
 const adminRoute = require('./routes/admin')
+const userProfile = require('./routes/profile');
 const {handlingError, serverErrorHandler} = require('./controllers/error')
 const config = require("config");
 const swaggerJsDoc = require('swagger-jsdoc');
@@ -38,6 +39,7 @@ app.use('/api-docs',swaggerUI.serve,swaggerUI.setup(swaggerDocs));
 app.use(express.json());
 app.use('/admin/control',adminRoute);
 app.use('/accounts', authRouter);
+app.use('/my-profile', userProfile);
 app.use('/conversations',conversationRouter);
 //app.use('/categories', categoryRouter);
 app.use(handlingError,serverErrorHandler)

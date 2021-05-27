@@ -94,7 +94,7 @@ exports.addingUser = async (req, res, next) => {
   let token = user.generateAuthToken();
   res
     .header("x-auth-token", token)
-    .send(_.pick(user, ["_id", "name", "email", "isServiceProvider"]));
+    .json({data:_.pick(user, ["_id", "name", "email", "isServiceProvider"]),token:token})
 };
 
 //#endregion
@@ -137,33 +137,4 @@ exports.authUser = async (req, res, next) => {
   res.send(token);
 };
 
-//#endregion
-
-//#region Getting profile information
-exports.getUserInfo = async (req, res, next) => {
-  const userID = req.user._id;
-  const user = await User.findById(userID);
-  if (!user.role==='serviceProvider')
-    return res.status(401).json({ message: "Not allowed" });
-
-  const userInfo = await User.findById(userID)
-    .populate("users")
-    .select("name userName profilePic gallery availability gender age");
-  console.log(userInfo);
-  res.status(200).send(userInfo);
-};
-//#endregion
-
-//#region change profile picture
-exports.changeProfilePic = async (req, res, next) => {
-  const userID = req.user._id;
-  const user = await User.findByIdAndUpdate(
-    userID,
-    { profilePic: req.body.profilePic },
-    {
-      new: true,
-    }
-  );
-  res.status(200).send(user);
-};
 //#endregion

@@ -3,34 +3,34 @@ const mongoose = require("mongoose");
 
 exports.getAllServiceProviders = async (req, res, next) => {
   console.log(req.user);
-  if (!req.user.isAdmin)
+  if (req.user.role !=='admin')
     return res.status(401).json({ message: "Unauthorized Admin" });
 
-  const serviceProviders = await User.find({ isServiceProvider: true })
+  const serviceProviders = await User.find({ role: 'serviceProvider' })
     .populate('users')
     .select("name _id userName profilePic ");
   res.status(200).json({ result: serviceProviders });
 };
 
 exports.getUser = async (req, res, next) => {
-  if (!req.user.isAdmin)
+  if (req.user.role !=='admin')
   return res.status(401).json({ message: "Unauthorized Admin" });
 
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
-  const serviceProviderID = mongoose.Types.ObjectId(req.params.id);
-  const user = await User.findById(serviceProviderID);
+  const userID = mongoose.Types.ObjectId(req.params.id);
+  const user = await User.findById(userID);
 
   res.status(200).json({ result: user });
 };
 
 exports.deleteUser = async (req, res, next)=>{
-  if (!req.user.isAdmin)
+  if (req.user.role !=='admin')
   return res.status(401).json({ message: "Unauthorized Admin" });
 
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
-  const user = await User.findByIdAndRemove(userID);
+  const user = await User.findByIdAndRemove(req.params.id);
   if (!user)
     return res.status(400).json({ message: "There is no User with such ID" });
 
@@ -39,12 +39,12 @@ exports.deleteUser = async (req, res, next)=>{
 }
 
 exports.getAllCustomers = async (req, res , next)=>{
-  if (!req.user.isAdmin)
-    return res.status(401).json({ message: "Unauthorized Admin" });
+  if (req.user.role !=='admin')
+  return res.status(401).json({ message: "Unauthorized Admin" });
 
-  const serviceProviders = await User.find({isServiceProvider: false, isAdmin: false})
+  const customers = await User.find({role: 'customer'})
     .populate('users')
     .select("name _id userName profilePic ");
-  res.status(200).json({ result: serviceProviders });
+  res.status(200).json({ result: customers });
 }
 

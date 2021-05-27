@@ -57,3 +57,14 @@ exports.validateServiceProvider = function validateServiceProvider(user) {
     });
     return schema.validate(user);
 };
+
+
+exports.validateResetPassword = (password) => {
+    const schema = Joi.object({
+        current_password: Joi.string().required(),
+        new_password: passwordComplexity(complexityOptions).required(),
+        confirm_password: passwordComplexity(complexityOptions).required()
+    });
+
+    return schema.validate(password);
+};
