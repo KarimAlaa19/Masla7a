@@ -1,21 +1,13 @@
-
-// const express = require('express');
-// const { getAllCategories, addCategory, editCategory,deleteCategory, filterSearch } = require('../controllers/category-controller');
-// const { extractingToken } = require('../controllers/user-auth');
-
-
-// const router = express.Router();
+const express = require('express');
+const { getAllCategories } = require('../controllers/category-controller');
+const { filterServices } = require('../controllers/service-controller');
 
 
-// router.get('/', getAllCategories);
-
-// router.post('/add-category', extractingToken, addCategory);
-
-// router.post('/edit-category/:categoryId', extractingToken, editCategory);
-
-// router.get('/delete-category/:categoryId', extractingToken, deleteCategory);
-
-// router.get('/:categoryID', filterSearch);
+const router = express.Router();
 
 
-// module.exports = router;
+router.get('/', getAllCategories);
+
+router.get('/:categoryId', filterServices);
+
+module.exports = router;

@@ -12,72 +12,96 @@ const fs = require("fs");
 
 //#region handling common functions
 const addUser = async (req, res) => {
-    let user = await User.findOne({ email: req.body.email });
-    if (user)
-      return res.status(400).json({message: `This Email has been registered before as ${user.role}` });
-  
-    const used_userName = await User.findOne({ userName: req.body.userName });
-  
-    if (used_userName)
-      return res.status(400).json({ message: "This userName is already used, choose another one" });
-  
-    //Creating a User
-    user = await User.create(
-      _.pick(req.body, ["name","email","password","age","nationalID","phone_number","gender","userName","address","role"])
-    );
-  
-    // Reading files
-    if (req.files) {
-      for (var i = 0; i < req.files.length; i++) {
-        if (req.files[i].fieldname === "profilePic") {
-          const result = await cloud.uploads(req.files[i].path);
-          user.profilePic = result.url;
-          fs.unlinkSync(req.files[i].path);
-        }
+  //Creating a User
+  const user = new User(
+    _.pick(req.body, ["name", "email", "password", "age", "nationalID", "phone_number", "gender", "userName", "address", "role"])
+  );
+
+  // Reading files
+  if (req.files) {
+    for (var i = 0; i < req.files.length; i++) {
+      if (req.files[i].fieldname === "profilePic") {
+        const result = await cloud.uploads(req.files[i].path);
+        user.profilePic = result.url;
+        fs.unlinkSync(req.files[i].path);
       }
     }
-    //Encrypting the password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
-    await user.save();
-    return user;
-  };
+  }
+  //Encrypting the password
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(user.password, salt);
+
+  await user.save();
+  return user;
+};
 //#endregion 
+
 
 //#region User Sign up
 exports.addingUser = async (req, res, next) => {
-  if (!req.body.role)
-    return res.status(400).json({ message: "ROLE DATA IS MISSING" });
+  try {
 
-  let user;
+    let user;
 
-  //Normal User Handling
-  if (req.body.role === "customer") {
-    const { error } = validator.validateSignUp(req.body);
-    if (error)
-    return res.status(400).json({ message: error.details[0].message });
+    //Normal User Handling
+    if (req.body.role === "customer") {
+      const { error } = validator.validateSignUp(req.body);
+      if (error)
+        return res.status(400).json({ message: error.details[0].message });
 
-    user = await addUser(req, res);
-  }
-  
-  //Service Provider and Service Handling
-  if (req.body.role === "serviceProvider") {
-    const { error } = validator.validateServiceProvider(req.body);
-    if (error)
-      return res.status(400).json({ message: error.details[0].message });
+      user = await User.findOne({ email: req.body.email });
+
+      if (user)
+        return res.status(400).json({ message: `This Email has been registered before as ${user.role}` });
+
+      user = await User.findOne({ userName: req.body.userName });
+
+      if (user)
+        return res.status(400).json({ message: "This userName is already used, choose another one" });
 
       user = await addUser(req, res);
-      await user.save();
+    }
+
+    //Service Provider and Service Handling
+    if (req.body.role === "serviceProvider") {
+      const { error } = validator.validateServiceProvider(req.body);
+      if (error)
+        return res.status(400).json({ message: error.details[0].message });
+
+      user = await User.findOne({ email: req.body.email });
+
+      if (user)
+        return res.status(400).json({ message: `This Email has been registered before as ${user.role}` });
+
+      user = await User.findOne({ userName: req.body.userName });
+
+      if (user)
+        return res.status(400).json({ message: "This userName is already used, choose another one" });
+
 
       //Adding service
-      const categoryID = await Category.findOne({name: req.body.category});
+      const category = await Category.findOne({ name: req.body.category });
+
+      if (!category)
+        return res.status(400).json({
+          message: 'The Category You Chose Is Not Valid'
+        });
+
+      user = await addUser(req, res);
+      
       const service = await Service({
         serviceName: req.body.serviceName,
-        categoryId: categoryID,
+        categoryId: category._id,
         serviceProviderId: user._id,
         servicePrice: req.body.servicePrice,
         description: req.body.description
       }).save();
+
+      category.servicesList.push(service._id);
+
+      await category.save();
+
+      user.serviceId = service._id;
 
       if (req.files) {
         for (var i = 0; i < req.files.length; i++) {
@@ -88,15 +112,31 @@ exports.addingUser = async (req, res, next) => {
           }
         }
       }
-      await service.save();
-      }
-  //Sending genereted token
-  let token = user.generateAuthToken();
-  res
-    .header("x-auth-token", token)
-    .json({data:_.pick(user, ["_id", "name", "email", "isServiceProvider"]),token:token})
-};
 
+      await service.save();
+
+      await user.save();
+    }
+
+
+    //Sending genereted token
+    let token = user.generateAuthToken();
+
+    res
+      .header("x-auth-token", token)
+      .send(_.pick(user, ["_id", "name", "email", "role", "gotAddress"]));
+
+  } catch (err) {
+    if (err.message === "Cannot read property 'longitude' of undefined") {
+      return res.status(400).json({
+        message: 'The Address You Entered Is Not Valid'
+      });
+    }
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
 //#endregion
 
 //#region Extracting Token Data

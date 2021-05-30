@@ -9,6 +9,11 @@ const categorySchema = new mongoose.Schema({
         trim: true,
         required: true,
         unique: true
+    },
+    servicesList : {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'Service',
+        required: true
     }
 });
 

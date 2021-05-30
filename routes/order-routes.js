@@ -1,12 +1,13 @@
 const express = require('express');
-const orederController = require('../controllers/orderController');
+const { getUserOrders,createOrder } = require('../controllers/order-controller');
+const { extractingToken } = require('../controllers/user-auth');
 
 
 const router = express.Router();
 
 
-router.post('/create-order', orederController.createOrder);
+router.get('/', extractingToken, getUserOrders);
 
-router.post('/confirmOrder', orederController.confirmOrder);
+router.post('/create-order', createOrder);
 
 module.exports = router;

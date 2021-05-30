@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const config = require('config');
 const jwt = require('jsonwebtoken');
@@ -62,31 +61,24 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: function () {
             return this.role === 'serviceProvider';
-        },
-        validate: {
-            validator: function () {
-                return (this.role === 'serviceProvider') ||
-                    (this.role === 'basic');
-            },
-            message: 'Only Service Provider Can Assign This Field'
         }
     },
-    // location: {
-    //     type: {
-    //         type: String,
-    //         enum: ['Point']
-    //     },
-    //     coordinates: {
-    //         type: [Number],
-    //         index: '2dsphere'
-    //     },
-    //     formattedAddres: String,
-    //     city: String,
-    //     zipcode: String,
-    //     streetName: String,
-    //     streetNumber: String,
-    //     countryCode: String
-    // },
+    location: {
+        type: {
+            type: String,
+            enum: ['Point']
+        },
+        coordinates: {
+            type: [Number],
+            index: '2dsphere'
+        },
+        // formattedAddres: String,
+        // zipcode: String,
+        city: String,
+        streetName: String,
+        streetNumber: String,
+        countryCode: String
+    },
     role: {
         type: String,
         enum: ['customer',
@@ -99,7 +91,7 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: 'Service'
     },
-    availability:{
+    availability: {
         type: String,
         enum: ['online',
             'offline',
@@ -113,29 +105,32 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.generateAuthToken = function () {
     const token = jwt.sign({
         _id: this._id,
-        role : this.role,
         email: this.email,
-        userName: this.userName
+        userName: this.userName,
+        role: this.role,
+        gotAddress: (this.address !== undefined)
     }, config.get('jwtPrivateKey'));
     return token;
 };
 
 
-// userSchema.pre('save', async function (next) {
-//     const loc = await geocoder.geocode(this.address);
-//     this.location = {
-//         type: 'Point',
-//         coordinates: [loc[0].longitude, loc[0].latitude],
-//         formattedAddres: loc[0].formattedAddress,
-//         city: loc[0].city,
-//         zipcode: loc[0].zipcode,
-//         streetName: loc[0].streetName,
-//         streetNumber: loc[0].streetNumber,
-//         countryCode: loc[0].countryCode
-//     };
-//     this.address = undefined;
-//     next();
-// });
+userSchema.pre('save', async function (next) {
+    if (this.address) {
+        const loc = await geocoder.geocode(this.address);
+        this.location = {
+            type: 'Point',
+            coordinates: [loc[0].longitude, loc[0].latitude],
+            // formattedAddres: loc[0].formattedAddress,
+            city: loc[0].city,
+            // zipcode: loc[0].zipcode,
+            streetName: loc[0].streetName,
+            streetNumber: loc[0].streetNumber,
+            countryCode: loc[0].countryCode
+        };
+        this.address = loc[0].formattedAddress;
+    }
+    next();
+});
 
 
 

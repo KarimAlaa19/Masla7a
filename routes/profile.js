@@ -10,7 +10,7 @@ router.get('/', extractingToken, getUserInfo);
 
 
 //User login............PATH: '/my-profile/update-profilePic
-router.put('/update-profilePic', extractingToken,multerConfig, changeProfilePic );
+router.put('/update-profilePic', extractingToken ,multerConfig, changeProfilePic );
 
 
 //User login............PATH: '/my-profile/reset-password

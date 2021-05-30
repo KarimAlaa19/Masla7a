@@ -15,7 +15,10 @@ const fs = require("fs");
 exports.getUserInfo = async (req, res, next) => {
   const userID = req.user._id;
   const user = await User.findById(userID);
-  if (user.role!=='serviceProvider')
+  console.log(user)
+  if(!user)
+  return res.status(400).json({message: 'There is no User with such ID '})
+  if (user.role !=='serviceProvider')
     return res.status(401).json({ message: "Not allowed" });
 
   const userInfo = await User.findById(userID)
@@ -63,7 +66,10 @@ exports.resetPassword = async (req, res, next) => {
   if (error)return res.status(400).json({ message: error.details[0].message });
 
   let validPassword = await bcrypt.compare(req.body.current_password, user.password);
-  if (!validPassword) return res.status(400).send("Invalid password");
+  if (!validPassword) return res.status(400).json({message:"Invalid password"});
+
+  let checkNewPassword = await bcrypt.compare(req.body.new_password, user.password);
+  if (checkNewPassword) return res.status(400).json({message:"This new password is the same as your current password, Please change it"});
 
   if(req.body.new_password != req.body.confirm_password)
   return res.status(400).json({message: 'Confirm Password doesnt match new password'});

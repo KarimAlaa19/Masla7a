@@ -1,11 +1,12 @@
 
 const mongoose = require("mongoose");
 const authRouter = require('./routes/user-auth-routes');
-//const categoryRouter = require('./routes/category-routes');
+const categoryRouter = require('./routes/category-routes');
 const conversationRouter = require('./routes/conversation');
 const adminRoute = require('./routes/admin')
 const userProfile = require('./routes/profile');
-const {handlingError, serverErrorHandler} = require('./controllers/error')
+const orderRouter = require('./routes/order-routes')
+const {handlingError, serverErrorHandler, _404} = require('./controllers/error')
 const config = require("config");
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUI = require('swagger-ui-express');
@@ -22,28 +23,18 @@ var corsOption = {
 };
 app.use(cors(corsOption));
 
-const swaggerOptions={
-  definition:{
-      openapi:'3.0.0',
-      info:{
-          title: "Masla7a API's Library",
-          version:'1.0.0',
-          servers:["http://localhost:3000"]
-      }
-  },
-  apis:["./routes/*"]
-}
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs',swaggerUI.serve,swaggerUI.setup(swaggerDocs));
-
 app.use(express.json());
 app.use('/admin/control',adminRoute);
 app.use('/accounts', authRouter);
+app.use('/orders', orderRouter);
 app.use('/my-profile', userProfile);
 app.use('/conversations',conversationRouter);
-//app.use('/categories', categoryRouter);
+app.use('/categories', categoryRouter);
 app.use(handlingError,serverErrorHandler)
 app.use(serverErrorHandler)
+app.use('/', _404);
+app.use(handlingError, serverErrorHandler);
+app.use(serverErrorHandler);
 
 const port = process.env.PORT || 3000;
 const uri = 

@@ -2,6 +2,7 @@
 const express = require('express');
 const adminController = require('../controllers/admin');
 const authcontroller = require('../controllers/user-auth');
+const adminCategoryRouter = require('./admin_routes/admin_category_routes')
 const router = express.Router();
 
 router.use(authcontroller.extractingToken);
@@ -16,7 +17,12 @@ router.get('/user/:id', adminController.getUser);
 router.get('/customers',adminController.getAllCustomers);
 
 //Path /admin/control/delete/:id
-router.delete('/delete/:id',adminController.deleteUser);
+router.delete('/user/delete/:id',adminController.deleteUser);
 
 //adding service....
+
+
+router.use('/categories', adminCategoryRouter)
+
+
 module.exports = router;
