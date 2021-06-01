@@ -8,6 +8,6 @@ const router = express.Router();
 
 router.get('/', extractingToken, getUserOrders);
 
-router.post('/create-order', createOrder);
+router.post('/create-order', extractingToken, createOrder);
 
 module.exports = router;

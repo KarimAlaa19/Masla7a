@@ -22,8 +22,8 @@ exports.validateSignUp = (user) => {
         phone_number: Joi.string().min(11).max(18).required(),
         gender: Joi.string().required(),
         userName: Joi.string().required(),
-        role: Joi.string().required()
-
+        role: Joi.string().required(),
+        address: Joi.string()
     });
 
     return schema.validate(user);
@@ -49,22 +49,11 @@ exports.validateServiceProvider = function validateServiceProvider(user) {
         gender: Joi.string().required(),
         serviceName: Joi.string().min(3).required(),
         category: Joi.string().required(),
-        description: Joi.string().min(20).max(1024).required(),
+        description: Joi.string().min(20).max(1024),
         servicePrice: Joi.number().required(),
         address: Joi.string().required(),
         userName: Joi.string().required(),
         role: Joi.string().required() 
     });
     return schema.validate(user);
-};
-
-
-exports.validateResetPassword = (password) => {
-    const schema = Joi.object({
-        current_password: Joi.string().required(),
-        new_password: passwordComplexity(complexityOptions).required(),
-        confirm_password: passwordComplexity(complexityOptions).required()
-    });
-
-    return schema.validate(password);
 };
