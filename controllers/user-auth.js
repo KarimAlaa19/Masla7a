@@ -1,4 +1,3 @@
-
 const User = require("../models/user-model");
 const Service = require("../models/service-model");
 const Category = require("../models/category-model");
@@ -13,9 +12,23 @@ const fs = require("fs");
 //#region handling common functions
 const addUser = async (req, res) => {
   //Creating a User
+  const today = new Date();
+  const userDate = new Date(req.body.birthDate);
+  const age = today.getFullYear() - userDate.getFullYear();
   const user = new User(
-    _.pick(req.body, ["name", "email", "password", "age", "nationalID", "phone_number", "gender", "userName", "address", "role"])
-  );
+    {
+      name: req.body.name,
+      email: req.body.email,
+      password : req.body.password,
+      age: age,
+      nationalID: req.body.nationalID,
+      phone_number: req.body.phone_number,
+      gender: req.body.gender,
+      userName: req.body.userName,
+      role: req.body.role,
+      address: req.body.address
+    });
+  
 
   // Reading files
   if (req.files) {
@@ -34,15 +47,15 @@ const addUser = async (req, res) => {
   await user.save();
   return user;
 };
-//#endregion 
-
+//#endregion
 
 //#region User Sign up
 exports.addingUser = async (req, res, next) => {
   try {
-
     let user;
 
+    if(req.body.password !== req.body.confirm_password)
+    return res.status(400).json({message: 'Password And Confirm Password Do Not Match'})
     //Normal User Handling
     if (req.body.role === "customer") {
       const { error } = validator.validateSignUp(req.body);
@@ -52,12 +65,20 @@ exports.addingUser = async (req, res, next) => {
       user = await User.findOne({ email: req.body.email });
 
       if (user)
-        return res.status(400).json({ message: `This Email has been registered before as ${user.role}` });
+        return res
+          .status(400)
+          .json({
+            message: `This Email has been registered before as ${user.role}`,
+          });
 
       user = await User.findOne({ userName: req.body.userName });
 
       if (user)
-        return res.status(400).json({ message: "This userName is already used, choose another one" });
+        return res
+          .status(400)
+          .json({
+            message: "This userName is already used, choose another one",
+          });
 
       user = await addUser(req, res);
     }
@@ -71,30 +92,37 @@ exports.addingUser = async (req, res, next) => {
       user = await User.findOne({ email: req.body.email });
 
       if (user)
-        return res.status(400).json({ message: `This Email has been registered before as ${user.role}` });
+        return res
+          .status(400)
+          .json({
+            message: `This Email has been registered before as ${user.role}`,
+          });
 
       user = await User.findOne({ userName: req.body.userName });
 
       if (user)
-        return res.status(400).json({ message: "This userName is already used, choose another one" });
-
+        return res
+          .status(400)
+          .json({
+            message: "This userName is already used, choose another one",
+          });
 
       //Adding service
       const category = await Category.findOne({ name: req.body.category });
 
       if (!category)
         return res.status(400).json({
-          message: 'The Category You Chose Is Not Valid'
+          message: "The Category You Chose Is Not Valid",
         });
 
       user = await addUser(req, res);
-      
+
       const service = await Service({
         serviceName: req.body.serviceName,
         categoryId: category._id,
         serviceProviderId: user._id,
         servicePrice: req.body.servicePrice,
-        description: req.body.description
+        description: req.body.description,
       }).save();
 
       category.servicesList.push(service._id);
@@ -118,22 +146,20 @@ exports.addingUser = async (req, res, next) => {
       await user.save();
     }
 
-
     //Sending genereted token
     let token = user.generateAuthToken();
 
     res
       .header("x-auth-token", token)
-      .send(_.pick(user, ["_id", "name", "email", "role", "gotAddress"]));
-
+      .json({token: token, user:_.pick(user, ["_id", "name", "email", "role", "gotAddress"]) })
   } catch (err) {
     if (err.message === "Cannot read property 'longitude' of undefined") {
       return res.status(400).json({
-        message: 'The Address You Entered Is Not Valid'
+        message: "The Address You Entered Is Not Valid",
       });
     }
     res.status(500).json({
-      message: err.message
+      message: err.message,
     });
   }
 };

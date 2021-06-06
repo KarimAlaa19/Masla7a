@@ -5,6 +5,7 @@ const Category = require("../models/category-model");
 const validator = require("../validators/user-validator");
 const config = require("config");
 const jwt = require("jsonwebtoken");
+const mongoose = require('mongoose')
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const cloud = require("../images/images-controller/cloudinary");
@@ -13,9 +14,10 @@ const fs = require("fs");
 
 //#region Getting profile information
 exports.getUserInfo = async (req, res, next) => {
-  const userID = req.user._id;
+  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+
+  const userID = mongoose.Types.ObjectId(req.params.id);
   const user = await User.findById(userID);
-  console.log(user)
   if(!user)
   return res.status(400).json({message: 'There is no User with such ID '})
   if (user.role !=='serviceProvider')
@@ -24,8 +26,9 @@ exports.getUserInfo = async (req, res, next) => {
   const userInfo = await User.findById(userID)
     .populate("users")
     .select("name userName profilePic gallery availability gender age");
-  console.log(userInfo);
-  res.status(200).json({result: userInfo});
+  const service = await Service.findOne({serviceProviderId: userID}).populate('services').select('serviceName servicePrice description gallery')
+  const fullInfo = {userInfo, service}
+  res.status(200).json({result: fullInfo});
 };
 //#endregion
 
@@ -42,7 +45,7 @@ exports.changeProfilePic = async (req, res, next) => {
       }
     }
   }
-  res.status(200).send(user);
+  res.status(200).json({user: user});
 };
 //#endregion
 
@@ -79,4 +82,23 @@ exports.resetPassword = async (req, res, next) => {
     await user.save();
   res.status(200).json({message : 'You have successfully changed your password'});
 };
+//#endregion
+
+//#region Add photos in the gallery
+exports.addIntoGallery = async (req, res, next)=>{
+  const userID = req.user._id;
+  const user = await User.findById(userID);
+  const service = await Service.findOne({serviceProviderId: userID})
+  if (req.files) {
+    for (var i = 0; i < req.files.length; i++) {
+      if (req.files[i].fieldname === "gallery") {
+        let cloudStr = await cloud.uploads(req.files[i].path);
+        service.gallery.push(cloudStr.url);
+        await service.save()
+        fs.unlinkSync(req.files[i].path);
+      }
+    }
+  }
+  res.status(200).json({user: user});
+}
 //#endregion
