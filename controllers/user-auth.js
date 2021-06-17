@@ -151,6 +151,7 @@ exports.addingUser = async (req, res, next) => {
 
     res
       .header("x-auth-token", token)
+      .status(200)
       .json({token: token, user:_.pick(user, ["_id", "name", "email", "role", "gotAddress"]) })
   } catch (err) {
     if (err.message === "Cannot read property 'longitude' of undefined") {
@@ -201,7 +202,7 @@ exports.authUser = async (req, res, next) => {
   const token = await user.generateAuthToken();
 
   
-  res.json({token: token});
+  res.status(200).json({token: token});
 };
 //#endregion
 

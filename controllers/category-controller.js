@@ -12,7 +12,7 @@ exports.getAllCategories = async (req, res) => {
 
         return res.status(200).json({ categories: categories });
     } catch (err) {
-        res.send(err.message);
+        res.status(500).json({error: err.message});
     }
 };
 
@@ -33,7 +33,7 @@ exports.addCategory = async (req, res) => {
             category: category
         })
     } catch (err) {
-        res.json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
@@ -62,7 +62,7 @@ exports.editCategory = async (req, res) => {
             category: category
         })
     } catch (err) {
-        res.json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
@@ -85,7 +85,7 @@ exports.deleteCategory = async (req, res) => {
             message: 'Category Deleted Successfully'
         })
     } catch (err) {
-        res.json({ message: err.message });
+        res.status(500).json({ message: err.message });
     }
 };
 
