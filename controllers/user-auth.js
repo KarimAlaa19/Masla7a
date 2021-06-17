@@ -54,9 +54,7 @@ exports.addingUser = async (req, res, next) => {
   try {
     let user;
 
-    if(req.body.password !== req.body.confirm_password)
-    return res.status(400).json({message: 'Password And Confirm Password Do Not Match'})
-    //Normal User Handling
+   //Normal User Handling
     if (req.body.role === "customer") {
       const { error } = validator.validateSignUp(req.body);
       if (error)
