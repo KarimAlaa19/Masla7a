@@ -15,10 +15,8 @@ const { handlingError, serverErrorHandler, _404 } = require('./controllers/error
 const app = express();
 
 const port = process.env.PORT || 3000;
-const uri = //'mongodb://localhost/masla7a'
+const uri = 
    "mongodb+srv://masla7a_team:TcFX4tnzWH8HlQZq@cluster0.7ygwl.mongodb.net/maslaha?retryWrites=true&w=majority";
-
-  
 
 var corsOption = {
   origin: true,
