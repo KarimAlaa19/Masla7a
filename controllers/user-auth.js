@@ -204,6 +204,3 @@ exports.authUser = async (req, res, next) => {
 };
 //#endregion
 
-//#region testing
-
-//#endregion
