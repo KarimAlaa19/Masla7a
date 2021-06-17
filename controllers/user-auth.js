@@ -201,7 +201,9 @@ exports.authUser = async (req, res, next) => {
   const token = await user.generateAuthToken();
 
   res.json({token: token});
-  
 };
+//#endregion
+
+//#region testing
 
 //#endregion
