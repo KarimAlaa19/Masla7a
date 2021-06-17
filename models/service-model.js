@@ -18,10 +18,11 @@ const serviceSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    orderId: {
-        type: [mongoose.Types.ObjectId],
-        ref: 'Order'
-    },
+    ordersList: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'Order',
+        required: true
+    }],
     servicePrice: {
         type: Number,
         min: 5,

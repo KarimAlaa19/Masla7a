@@ -2,19 +2,11 @@ const _ = require("lodash");
 const Order = require("../models/order-model");
 const Service = require("../models/service-model");
 const { validateCreateOrder } = require("../validators/order-validator");
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
 exports.getUserOrders = async (req, res) => {
   try {
-    // const orders = await Order
-    //     .find({
-    //         $or: [
-    //             { customerId: req.user._id },
-    //             { serviceProviderId: req.user._id }
-    //         ]
-    //     })
-    //     .populate('customerId', 'name')
-    //     .populate('serviceProviderId', 'name');
+
     if (req.user.role !== "customer")
       return res
         .status(400)
@@ -23,13 +15,11 @@ exports.getUserOrders = async (req, res) => {
 
     if (req.user.role === "customer") {
       orders = await Order.find({ customerId: req.user._id }).populate(
-        "customerId",
-        "name"
+        "customerId"
       );
     } else {
       orders = await Order.find({ serviceProviderId: req.user._id }).populate(
-        "serviceProviderId",
-        "name"
+        "serviceProviderId"
       );
     }
 
@@ -64,6 +54,11 @@ exports.createOrder = async (req, res) => {
       "price",
       "address",
     ]);
+
+    if (req.body.startsAt > req.body.endsAt)
+      return res.status(400).json({
+        message: 'The Time To Start The Order Is Earlier Than Th Time To End It'
+      });
 
     const service = await Service.findOne({
       serviceProviderId: req.body.serviceProviderId,

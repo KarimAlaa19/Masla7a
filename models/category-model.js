@@ -10,11 +10,11 @@ const categorySchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    servicesList : {
-        type: [mongoose.Schema.Types.ObjectId],
+    servicesList: [{
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'Service',
         required: true
-    }
+    }]
 });
 
 

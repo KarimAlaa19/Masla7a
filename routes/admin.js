@@ -1,27 +1,32 @@
-
 const express = require('express');
-const adminController = require('../controllers/admin');
-const authcontroller = require('../controllers/user-auth');
-const adminCategoryRouter = require('./admin_routes/admin_category_routes')
+const { getAllServiceProviders,
+    getUser,
+    getAllCustomers,
+    deleteUser } = require('../controllers/admin');
+const { extractingToken } = require('../controllers/user-auth');
+const adminCategoryRouter = require('./admin_routes/admin_category_routes');
+
+
+
 const router = express.Router();
 
-router.use(authcontroller.extractingToken);
+
+
+router.use(extractingToken);
 
 //Path /admin/control/service-providers
-router.get('/service-providers', adminController.getAllServiceProviders);
+router.get('/service-providers', getAllServiceProviders);
 
 //Path /admin/control/user/:id
-router.get('/user/:id', adminController.getUser);
+router.get('/user/:id', getUser);
 
 //Path /admin/control/customers
-router.get('/customers',adminController.getAllCustomers);
+router.get('/customers', getAllCustomers);
 
 //Path /admin/control/delete/:id
-router.delete('/user/delete/:id',adminController.deleteUser);
+router.delete('/user/delete/:id', deleteUser);
 
-//adding service....
-
-
+//admin category routes /admin/control/categories
 router.use('/categories', adminCategoryRouter)
 
 

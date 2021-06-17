@@ -2,7 +2,7 @@
 const express = require('express');
 const { getAllCategories, getAllServicesInCategory, addCategory, editCategory, deleteCategory } =
     require('../../controllers/category-controller');
-const { extractingToken } = require('../../controllers/user-auth');
+
 
 const router = express.Router();
 
@@ -10,10 +10,10 @@ router.get('/', getAllCategories);
 
 router.get('/:categoryId', getAllServicesInCategory);
 
-router.post('/add-category', extractingToken, addCategory);
+router.post('/add-category', addCategory);
 
-router.put('/edit-category/:categoryId', extractingToken, editCategory);
+router.post('/edit-category/:categoryId', editCategory);
 
-router.delete('/delete-category/:categoryId', extractingToken, deleteCategory);
+router.get('/delete-category/:categoryId', deleteCategory);
 
 module.exports = router;

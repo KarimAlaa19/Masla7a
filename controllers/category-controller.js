@@ -5,8 +5,8 @@ const categoryValidator = require('../validators/category-validator');
 exports.getAllCategories = async (req, res) => {
     try {
         const categories = await Category
-        .find()
-        .select('name');
+            .find()
+            .select('name');
 
         if (!categories) return res.status(200).json({ message: 'No categories added yet' });
 
@@ -91,29 +91,36 @@ exports.deleteCategory = async (req, res) => {
 
 
 exports.getAllServicesInCategory = async (req, res) => {
+
+    if (req.user.role !== 'admin')
+        return res.status(403).json({
+            message: 'you are not allowed to make changes here'
+        });
+
     try {
         const category = await Category
-        .findById(req.params.categoryId)
-        .populate()
-        .select('servicesList name ')
-   
-    if (!category)
-        return res.status(200).json({
-            message: 'The Category You Are Trying To Access Doesn\'t Exist'
-        });
+            .findById(req.params.categoryId)
+            .populate('servicesList', 'serviceName');
 
-    if (category.servicesList.length === 0)
-        return res.status(200).json({
-            message: `The ${category.name} Doesn't Contain Any Service`
-        });
 
-    res.status(200).json({
-        servicesCount: category.servicesList.length,
-        category: category
-    });
-} catch (err) {
-    res.status(500).json({
-        errorMessage: err.message
-    });
-}
+        if (!category)
+            return res.status(200).json({
+                message: 'The Category You Are Trying To Access Doesn\'t Exist'
+            });
+
+
+        if (category.servicesList.length === 0)
+            return res.status(200).json({
+                message: `The ${category.name} Doesn't Contain Any Service`
+            });
+
+        res.status(200).json({
+            servicesCount: category.servicesList.length,
+            category: category
+        });
+    } catch (err) {
+        res.status(500).json({
+            errorMessage: err.message
+        });
+    }
 };

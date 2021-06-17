@@ -3,7 +3,7 @@ const config = require('config');
 const mongoose = require('mongoose');
 const Service = require('../models/service-model');
 const Category = require('../models/category-model');
-const User = require('../models/user-model');
+const User = require('..//models/user-model');
 const Fuse = require('fuse.js');
 
 const options = {
@@ -108,6 +108,7 @@ exports.filterServices = async (req, res, next) => {
                     _id: true,
                     name: true,
                     userName: true,
+                    'location.city': true,
                     'location.streetName': true
                 },
                 ordersNumber: { $size: '$ordersList' }
