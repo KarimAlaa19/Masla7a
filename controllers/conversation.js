@@ -31,15 +31,10 @@ exports.fetchMessages = async (req, res, next) => {
     req.allowPagination,
     {
       conversation: conversationID,
-    },
-    {
-      sort: "-createdAt",
-      select: 'content attachment',
-      populate: [
-        { path: "users", select: "name profilePic" },
-      ]
     }
-  );
+  ).populate('user', 'name profilePic')
+  .select('content attachment')
+  .sort('-createdAt');
   console.log(messages)
   res.status(200).send(messages);
 };

@@ -14,6 +14,7 @@ exports.getAllServiceProviders = async (req, res, next) => {
   res.status(200).json({ result: serviceProviders });
 };
 
+
 exports.getUser = async (req, res, next) => {
   if (req.user.role !== "admin")
     return res.status(401).json({ message: "Unauthorized Admin" });

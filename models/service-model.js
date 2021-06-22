@@ -36,7 +36,13 @@ const serviceSchema = new mongoose.Schema({
     },
     gallery: [{
         type: String
-    }]
+    }],
+    averageRating:{
+        type: Number
+    },
+    numberOfRatings: {
+        type: Number
+    }
 });
 
 
