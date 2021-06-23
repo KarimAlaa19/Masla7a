@@ -144,6 +144,8 @@ exports.addingUser = async (req, res, next) => {
       await user.save();
     }
 
+    if(!user)
+    return res.status(400).json({message: 'Failed to submit a user successfully'});
     //Sending genereted token
     let token = user.generateAuthToken();
 

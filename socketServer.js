@@ -9,7 +9,7 @@ const socketServer = (server) => {
   try {
     const io = socketIO(server);
 
-    const nameSpace = io.of("/chat");
+    const nameSpace = io.of("/chating");
     nameSpace.on(
       "connection",
       socketIOJwt.authorize({

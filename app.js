@@ -34,7 +34,7 @@ app.use('/admin/control', adminRoute);
 app.use('/accounts', authRouter);
 app.use('/orders', orderRouter);
 app.use('/my-profile', userProfile);
-app.use('/conversations', conversationRouter);
+app.use('/chating', conversationRouter);
 app.use('/categories', categoryRouter);
 app.use('/', _404);
 // app.use(handlingError, serverErrorHandler)
