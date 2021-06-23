@@ -54,6 +54,10 @@ exports.addingUser = async (req, res, next) => {
   try {
     let user;
 
+    if(Object.keys(req.body).length === 0)
+    return res.status(400).json({message: 'Error Message...The Request Body Is Empty!'});
+    
+    console.log(req.body)
    //Normal User Handling
     if (req.body.role === "customer") {
       const { error } = validator.validateSignUp(req.body);
