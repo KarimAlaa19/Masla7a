@@ -6,6 +6,7 @@ const authRouter = require('./routes/user-auth-routes');
 const categoryRouter = require('./routes/category-routes');
 const conversationRouter = require('./routes/conversation');
 const adminRoute = require('./routes/admin')
+const homeRoute = require('./routes/home')
 const userProfile = require('./routes/profile');
 const orderRouter = require('./routes/order-routes')
 const { handlingError, serverErrorHandler, _404 } = require('./controllers/error')
@@ -31,6 +32,7 @@ app.use(cors(corsOption));
 app.use(express.json());
 
 app.use('/admin/control', adminRoute);
+app.use('/home', homeRoute);
 app.use('/accounts', authRouter);
 app.use('/orders', orderRouter);
 app.use('/my-profile', userProfile);
