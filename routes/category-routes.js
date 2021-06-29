@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.get('/', getAllCategories);
 
-router.get('/:categoryId', filterServices);
+router.get('/search', filterServices)
+
+router.get('/search/:categoryId', filterServices);
 
 module.exports = router;

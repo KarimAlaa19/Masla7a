@@ -4,7 +4,8 @@ const { getAllServiceProviders,
     getAllCustomers,
     deleteUser } = require('../controllers/admin');
 const { extractingToken } = require('../controllers/user-auth');
-const adminCategoryRouter = require('./admin_routes/admin_category_routes');
+const adminCategoryRouter = require('./admin_routes/admin-category-routes');
+const adminOrdersRouter = require('./admin_routes/admin-orders-routes');
 
 
 
@@ -27,7 +28,10 @@ router.get('/customers', getAllCustomers);
 router.delete('/user/delete/:id', deleteUser);
 
 //admin category routes /admin/control/categories
-router.use('/categories', adminCategoryRouter)
+router.use('/categories', adminCategoryRouter);
+
+//admin/control/orders
+router.use('/orders', adminOrdersRouter);
 
 
 module.exports = router;

@@ -33,6 +33,11 @@ const orderSchema = new mongoose.Schema({
     // paymentMethod:{
 
     // },
+    serviceId: {
+        type: mongoose.Types.ObjectId,
+        ref: 'Service',
+        required: true
+    },
     serviceName: {
         type: String,
         minlength: true,

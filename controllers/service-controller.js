@@ -22,12 +22,16 @@ exports.filterServices = async (req, res, next) => {
 
     const token = req.header('x-auth-token');
 
-    if ((!mongoose.isValidObjectId(req.params.categoryId)) || (!req.params.categoryId))
+    if ((req.params.categoryId) && (!mongoose.isValidObjectId(req.params.categoryId)))
         return res.status(400).json({
             message: 'The Category You Chose Doesn\'t Exist'
         });
 
     try {
+
+
+        const pageNumber = !req.query.page ?
+            1 : req.query.page;
 
         let decodedToken;
 
@@ -35,16 +39,19 @@ exports.filterServices = async (req, res, next) => {
             decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
         }
 
-        const category = await Category.findById(req.params.categoryId);
+        if (req.params.categoryId !== undefined) {
+            const category = await Category.findById(req.params.categoryId);
 
-        if (!category)
-            return res.status(404).json({
-                message: 'Page Not Found'
-            });
+            if (!category)
+                return res.status(404).json({
+                    message: 'Page Not Found'
+                });
+        }
 
 
         const queryData = {
-            categoryId: mongoose.Types.ObjectId(req.params.categoryId)
+            categoryId: !req.params.categoryId ?
+                undefined : mongoose.Types.ObjectId(req.params.categoryId)
         };
 
         const servicePrice = {
@@ -109,11 +116,18 @@ exports.filterServices = async (req, res, next) => {
                     name: true,
                     userName: true,
                     'location.city': true,
-                    'location.streetName': true
+                    'location.streetName': true,
+                    address: true,
+                    profilePic: true,
+                    availability: true
                 },
-                ordersNumber: { $size: '$ordersList' }
+                averageRating: true,
+                numberOfRatings: true,
+                ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
             })
-            .sort(sortBy(req.query.sort));
+            .sort(sortBy(req.query.sort))
+            .skip((pageNumber - 1) * 10)
+            .limit(10);
 
 
         if (req.query.search) {
@@ -154,10 +168,16 @@ function sortBy(sortFactor) {
             return { servicePrice: 1 };
         case 'price_desc':
             return { servicePrice: -1 };
-        // case 'most_rated':
-        //     return {};
+        case 'most_rated':
+            return {
+                averageRating: -1,
+                numberOfRatings: -1
+            };
         case 'popularity':
         default:
-            return { ordersNumber: -1 };
+            return {
+                ordersNumber: -1,
+                numberOfRatings: -1,
+            };
     }
 }
