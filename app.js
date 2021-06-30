@@ -8,15 +8,16 @@ const conversationRouter = require('./routes/conversation');
 const adminRoute = require('./routes/admin')
 const homeRoute = require('./routes/home')
 const userProfile = require('./routes/profile');
-const orderRouter = require('./routes/order-routes')
+const orderRouter = require('./routes/order-routes');
+const favouritesRouter = require('./routes/favourites-routes');
 const { handlingError, serverErrorHandler, _404 } = require('./controllers/error')
 
 
 const app = express();
 
 const port = process.env.PORT || 3000;
-const uri = 
-   "mongodb+srv://masla7a_team:TcFX4tnzWH8HlQZq@cluster0.7ygwl.mongodb.net/maslaha?retryWrites=true&w=majority";
+const uri =
+  "mongodb+srv://masla7a_team:TcFX4tnzWH8HlQZq@cluster0.7ygwl.mongodb.net/maslaha?retryWrites=true&w=majority";
 
 var corsOption = {
   origin: true,
@@ -38,6 +39,7 @@ app.use('/orders', orderRouter);
 app.use('/my-profile', userProfile);
 app.use('/chating', conversationRouter);
 app.use('/categories', categoryRouter);
+app.use('/favourites', favouritesRouter);
 app.use('/', _404);
 // app.use(handlingError, serverErrorHandler)
 // app.use(serverErrorHandler)

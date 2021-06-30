@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const config = require('config');
 const mongoose = require('mongoose');
+const Fuse = require('fuse.js');
 const Service = require('../models/service-model');
 const Category = require('../models/category-model');
 const User = require('..//models/user-model');
-const Fuse = require('fuse.js');
+const { cleanObj } = require('../utils/filterHelpers');
 
 const options = {
     minMatchCharLength: 1,
@@ -16,6 +17,60 @@ const options = {
     ]
 }
 
+
+
+exports.topServiceProviders = async (req, res, next) => {
+    try {
+        const serviceProviders = await Service
+            .aggregate()
+            .lookup({
+                from: 'users',
+                localField: 'serviceProviderId',
+                foreignField: '_id',
+                as: 'serviceProviderId'
+            })
+            .project({
+                _id: true,
+                serviceName: true,
+                servicePrice: true,
+                serviceProviderId: {
+                    _id: true,
+                    name: true,
+                    userName: true,
+                    'location.city': true,
+                    'location.streetName': true,
+                    address: true,
+                    profilePic: true,
+                    availability: true
+                },
+                averageRating: true,
+                numberOfRatings: true,
+                ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
+            })
+            .sort({
+                ordersNumber: -1,
+                numberOfRatings: -1,
+                averageRating: -1
+            });
+
+
+        if (serviceProviders.length === 0)
+            return res.status(200).json({
+                message: 'No Service Providers Added Yet'
+            });
+
+
+        return res.status(200).json({
+            serviceProvidersCount: serviceProviders.length,
+            serviceProviders: serviceProviders
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: err.message
+        });
+    }
+};
 
 
 exports.filterServices = async (req, res, next) => {
@@ -30,13 +85,15 @@ exports.filterServices = async (req, res, next) => {
     try {
 
 
-        const pageNumber = !req.query.page ?
-            1 : req.query.page;
-
         let decodedToken;
 
         if (token) {
             decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
+            const user = await User.findById(decodedToken._id);
+            if (!user)
+                return res.status(400).json({
+                    message: 'The User in The Token not found'
+                })
         }
 
         if (req.params.categoryId !== undefined) {
@@ -51,8 +108,12 @@ exports.filterServices = async (req, res, next) => {
 
         const queryData = {
             categoryId: !req.params.categoryId ?
-                undefined : mongoose.Types.ObjectId(req.params.categoryId)
+                undefined : mongoose.Types.ObjectId(req.params.categoryId),
+
+            averageRating: ((!req.query.rating) || (req.query.rating <= 0.4)) ?
+                undefined : { $gte: Number(req.query.rating) }
         };
+
 
         const servicePrice = {
             $gte: req.query.price_from === undefined ?
@@ -125,9 +186,7 @@ exports.filterServices = async (req, res, next) => {
                 numberOfRatings: true,
                 ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
             })
-            .sort(sortBy(req.query.sort))
-            .skip((pageNumber - 1) * 10)
-            .limit(10);
+            .sort(sortBy(req.query.sort));
 
 
         if (req.query.search) {
@@ -150,15 +209,13 @@ exports.filterServices = async (req, res, next) => {
         });
 
     } catch (err) {
+        if (err.message.includes('Unexpected token'))
+            return res.status(400).json({
+                message: 'Invalid Token'
+            });
         res.status(500).json({ message: err.message });
     }
 
-};
-
-
-const cleanObj = (obj) => {
-    Object.keys(obj).forEach(key => obj[key] === undefined ?
-        delete obj[key] : true);
 };
 
 

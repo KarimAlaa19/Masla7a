@@ -98,7 +98,11 @@ const userSchema = new mongoose.Schema({
             'busy'],
         default: 'offline',
         required: true
-    }
+    },
+    favouritesList: [{
+        type: mongoose.Types.ObjectId,
+        ref: 'User'
+    }]
 });
 
 

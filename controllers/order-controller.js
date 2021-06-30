@@ -11,20 +11,21 @@ const { findById } = require("../models/order-model");
 exports.getUserOrders = async (req, res) => {
   try {
 
-    if (req.user.role !== "customer")
+    if (req.user.role === "admin")
       return res
         .status(400)
-        .json({ message: "There is no orders fo non customer" });
+        .json({ message: "There is no orders for admins" });
+
     let orders;
 
     if (req.user.role === "customer") {
-      orders = await Order.find({ customerId: req.user._id }).populate(
-        "customerId"
-      );
+      orders = await Order
+        .find({ customerId: req.user._id })
+        .populate("customerId");
     } else {
-      orders = await Order.find({ serviceProviderId: req.user._id }).populate(
-        "serviceProviderId"
-      );
+      orders = await Order
+        .find({ serviceProviderId: req.user._id })
+        .populate("serviceProviderId");
     }
 
     if (orders.length === 0)
@@ -35,6 +36,36 @@ exports.getUserOrders = async (req, res) => {
     res.status(200).json({
       ordersCount: orders.length,
       orders: orders,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+
+exports.getOrder = async (req, res) => {
+  try {
+
+    if (req.user.role === "admin")
+      return res
+        .status(400)
+        .json({ message: "There is no orders for admins" });
+
+    const order = await Order
+      .findById({ customerId: req.user._id, _id: req.params.orderId })
+      .populate("customerId")
+      .populate('serviceProviderId');
+
+
+    if (!order)
+      return res.status(200).json({
+        message: "You Didn't Make Any Order Yet",
+      });
+
+    res.status(200).json({
+      order: order,
     });
   } catch (err) {
     res.status(500).json({
