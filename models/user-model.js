@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const config = require('config');
 const jwt = require('jsonwebtoken');
+const notificationService = require('../services/notification')
 const geocoder = require('../utils/geocoder');
 
 const userSchema = new mongoose.Schema({
@@ -102,8 +103,42 @@ const userSchema = new mongoose.Schema({
     favouritesList: [{
         type: mongoose.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    pushTokens: [
+        new mongoose.Schema(
+          {
+            deviceType: {
+              type: String,
+              enum: ["android", "ios", "web"],
+              default: 'web',
+              required: true,
+            },
+            deviceToken: {
+              type: String,
+              required: true,
+            },
+          },
+          { _id: false }
+        ),
+      ],
+
 });
+
+
+userSchema.methods.user_send_notification = async function (message) {
+    let changed = false;
+    let len = this.pushTokens.length;
+    while (len--) {
+      const deviceToken = this.pushTokens[len].deviceToken;
+      try {
+        await notificationService.firebaseSendNotification(deviceToken, message);
+      }catch (err) {
+        this.pushTokens.splice(len, 1);
+        changed = true;
+      }
+    }
+    if (changed) await this.save();
+  };
 
 
 userSchema.methods.generateAuthToken = function () {

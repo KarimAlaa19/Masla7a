@@ -26,7 +26,7 @@ var corsOption = {
   exposedHeaders: ['x-auth-token']
 };
 
-
+// /home/top-workers
 
 app.use(cors(corsOption));
 

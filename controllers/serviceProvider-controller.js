@@ -36,22 +36,19 @@ exports.topServiceProviders = async (req, res, next) => {
                 },
                 {
                     $project: {
-                        _id: true,
+                        _id: false,
                         serviceName: true,
                         servicePrice: true,
+                        averageRating: true,
+                        numberOfRatings: true,
                         serviceProvider: {
                             _id: true,
                             name: true,
-                            userName: true,
-                            'location.city': true,
-                            'location.streetName': true,
-                            address: true,
+                            gender:true,
                             profilePic: true,
                             availability: true
-                        },
-                        averageRating: true,
-                        numberOfRatings: true,
-                        ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
+                        }
+                        // ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
                     }
                 },
                 {
@@ -73,6 +70,7 @@ exports.topServiceProviders = async (req, res, next) => {
                 message: 'No Service Providers Added Yet'
             });
 
+       
         if (token) {
             const decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
 
@@ -91,10 +89,10 @@ exports.topServiceProviders = async (req, res, next) => {
                 }
             }));
         }
-
+        console.log(serviceProviders)
         return res.status(200).json({
-            serviceProvidersCount: serviceProviders.length,
-            serviceProviders: serviceProviders
+            //serviceProvidersCount: serviceProviders.length,
+             serviceProviders
         });
 
     } catch (err) {

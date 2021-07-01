@@ -23,7 +23,9 @@ exports.validateSignUp = (user) => {
         gender: Joi.string().required(),
         userName: Joi.string().required(),
         role: Joi.string().required(),
-        address: Joi.string()
+        address: Joi.string(),
+        deviceType: Joi.string(),
+        deviceToken : Joi.string()
     });
 
     return schema.validate(user);
@@ -53,7 +55,9 @@ exports.validateServiceProvider = function validateServiceProvider(user) {
         servicePrice: Joi.number().required(),
         address: Joi.string().required(),
         userName: Joi.string().required(),
-        role: Joi.string().required() 
+        role: Joi.string().required(),
+        deviceType: Joi.string(),
+        deviceToken : Joi.string()
     });
     return schema.validate(user);
 };

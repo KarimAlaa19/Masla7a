@@ -14,7 +14,15 @@ const categorySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Service',
         required: true
-    }]
+    }],
+    icon:{
+        type: String,
+        required: true
+    },
+    coverPhoto:{
+        type: String,
+        required: true
+    },
 });
 
 

@@ -15,21 +15,27 @@ const addUser = async (req, res) => {
   const today = new Date();
   const userDate = new Date(req.body.birthDate);
   const age = today.getFullYear() - userDate.getFullYear();
-  const user = new User(
-    {
-      name: req.body.name,
-      email: req.body.email,
-      password : req.body.password,
-      age: age,
-      nationalID: req.body.nationalID,
-      phone_number: req.body.phone_number,
-      gender: req.body.gender,
-      userName: req.body.userName,
-      role: req.body.role,
-      address: req.body.address
-    });
-  
 
+  const user = new User({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+    age: age,
+    nationalID: req.body.nationalID,
+    phone_number: req.body.phone_number,
+    gender: req.body.gender,
+    userName: req.body.userName,
+    role: req.body.role,
+    address: req.body.address,
+  });
+  if(req.body.deviceToken && req.body.deviceType){
+    let pushToken = {
+      deviceToken : req.body.deviceToken,
+      deviceType :req.body.deviceType
+    }
+    console.log(pushToken)
+    await user.pushToken.push(pushToken);
+  }
   // Reading files
   if (req.files) {
     for (var i = 0; i < req.files.length; i++) {
@@ -54,11 +60,13 @@ exports.addingUser = async (req, res, next) => {
   try {
     let user;
 
-    if(Object.keys(req.body).length === 0)
-    return res.status(400).json({message: 'Error Message...The Request Body Is Empty!'});
-    
-    console.log(req.body)
-   //Normal User Handling
+    if (Object.keys(req.body).length === 0)
+      return res
+        .status(400)
+        .json({ message: "Error Message...The Request Body Is Empty!" });
+
+    console.log(req.body);
+    //Normal User Handling
     if (req.body.role === "customer") {
       const { error } = validator.validateSignUp(req.body);
       if (error)
@@ -67,20 +75,16 @@ exports.addingUser = async (req, res, next) => {
       user = await User.findOne({ email: req.body.email });
 
       if (user)
-        return res
-          .status(400)
-          .json({
-            message: `This Email has been registered before as ${user.role}`,
-          });
+        return res.status(400).json({
+          message: `This Email has been registered before as ${user.role}`,
+        });
 
       user = await User.findOne({ userName: req.body.userName });
 
       if (user)
-        return res
-          .status(400)
-          .json({
-            message: "This userName is already used, choose another one",
-          });
+        return res.status(400).json({
+          message: "This userName is already used, choose another one",
+        });
 
       user = await addUser(req, res);
     }
@@ -94,20 +98,16 @@ exports.addingUser = async (req, res, next) => {
       user = await User.findOne({ email: req.body.email });
 
       if (user)
-        return res
-          .status(400)
-          .json({
-            message: `This Email has been registered before as ${user.role}`,
-          });
+        return res.status(400).json({
+          message: `This Email has been registered before as ${user.role}`,
+        });
 
       user = await User.findOne({ userName: req.body.userName });
 
       if (user)
-        return res
-          .status(400)
-          .json({
-            message: "This userName is already used, choose another one",
-          });
+        return res.status(400).json({
+          message: "This userName is already used, choose another one",
+        });
 
       //Adding service
       const category = await Category.findOne({ name: req.body.category });
@@ -148,15 +148,20 @@ exports.addingUser = async (req, res, next) => {
       await user.save();
     }
 
-    if(!user)
-    return res.status(400).json({message: 'Failed to submit a user successfully'});
+    if (!user)
+      return res
+        .status(400)
+        .json({ message: "Failed to submit a user successfully" });
     //Sending genereted token
     let token = user.generateAuthToken();
 
     res
       .header("x-auth-token", token)
       .status(200)
-      .json({token: token, user:_.pick(user, ["_id", "name", "email", "role", "gotAddress"]) })
+      .json({
+        token: token,
+        user: _.pick(user, ["_id", "name", "email", "role", "gotAddress"]),
+      });
   } catch (err) {
     if (err.message === "Cannot read property 'longitude' of undefined") {
       return res.status(400).json({
@@ -205,11 +210,6 @@ exports.authUser = async (req, res, next) => {
 
   const token = await user.generateAuthToken();
 
-  
-  res.status(200).json({token: token, _id:user._id });
+  res.status(200).json({ token: token, _id: user._id });
 };
 //#endregion
-
-
-
-

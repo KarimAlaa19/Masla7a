@@ -1,6 +1,7 @@
 const Review = require("../models/review");
 const Service = require("../models/service-model");
 const User = require("../models/user-model");
+const Notification = require("../models/notification");
 const mongoose = require("mongoose");
 const _ = require("lodash");
 const { validateReview } = require("../validators/review-validator");
@@ -37,13 +38,20 @@ exports.postServiceReview = async (req, res, next) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
   const serviceProviderID = mongoose.Types.ObjectId(req.params.id);
+  
+  //Retriving The Service from the Service Model
   const service = await Service.findOne({
     serviceProviderId: serviceProviderID,
   });
+  //Retriving Back The Reviewer and The Service Provider From User Model
+  const reviewer = await User.findById(req.user._id);
+  const serviceProvider = await User.findById(serviceProviderID);
 
+  //Validating The Input Review
   const { error } = validateReview(req.body);
   if (error) return res.status(401).send(error.details[0].message);
 
+  //Checking If The Reviewer Has Already Reviewed The User
   const redundantReview = await Review.findOne({
     serviceID: service._id,
     user: req.user._id,
@@ -58,10 +66,30 @@ exports.postServiceReview = async (req, res, next) => {
     content: req.body.content,
     rating: req.body.rating,
     serviceID: service._id,
-    user: req.user._id,
+    user: reviewer._id,
   });
   try {
     await review.save();
+    //try{
+      //Saving in-app notification for the request
+      // const notification = await new Notification({
+      //     title: "New Review",
+      //     body: `User ${reviewer.name} Reviewed Your Service ${ service.serviceName}`,
+      //     senderUser: reviewer._id,
+      //     targetUsers:  serviceProviderID,
+      //     subjectType: "Review",
+      //     subject: review._id,
+      //   })
+      //   await notification.save();
+  
+      // //push firebase notification
+      // await serviceProvider.user_send_notification(
+      //     notification.firebaseSendNotification()
+      //   );
+  
+    //}catch(err){
+    //  console.log(err)
+    //}
     res.status(200).json({
       message: "Successfully added a review",
     });
@@ -69,6 +97,26 @@ exports.postServiceReview = async (req, res, next) => {
     res.status(400).json({
       message: "Didn't Post A Review Successfully",
     });
+  }
+  try{
+    //Saving in-app notification for the request
+    const notification = await new Notification({
+        title: "New Request",
+        body: `User ${customer.name} Wants To Use Your Service ${ service.serviceName}`,
+        senderUser: customer._id,
+        targetUsers:  serviceProviderID,
+        subjectType: "Request",
+        subject: request._id,
+      })
+      await notification.save();
+
+    //push firebase notification
+    await serviceProvider.user_send_notification(
+        notification.firebaseSendNotification()
+      );
+
+  }catch(err){
+
   }
 };
 

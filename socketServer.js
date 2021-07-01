@@ -1,6 +1,7 @@
 const socketIO = require("socket.io");
 const socketIOJwt = require("socketio-jwt");
 const { Conversation } = require("./models/conversation");
+const Notification = require('./models/notification');
 const Message = require("./models/messages").Message;
 const { User } = require("./models/user-model");
 const config = require("config");
@@ -61,18 +62,20 @@ const socketServer = (server) => {
           message: data,
         });
 
-        // //Finding the conversation
-        // // let conversation = await Conversation.findOne({
-        // //   $or: [{ users: [senderID, data.to] }, { users: [data.to,senderID] }],
-        // // });
+          // // Send Notification in-app
+          // const receiver = await User.findById(data.to)
+          // const notification = await new Notification({
+          //   title: "New Message",
+          //   body: data.content,
+          //   senderUser: senderID,
+          //   targetUsers:  data.to,
+          //   subjectType: "Message",
+          //   subject: sentMessage._id,
+          // }).save();
 
-        // // //Create a conversation if there isn't
-        // // if (!conversation) {
-        // //   conversation = await new Conversation({
-        // //     users: [senderID, data.to],
-        // //   });
-        // //   await conversation.save();
-        // // }
+          // // push notifications
+          // await receiver.sendNotification(notification.toFirebaseNotification());
+        
       });
     });
     return io;
