@@ -21,44 +21,76 @@ const options = {
 
 exports.topServiceProviders = async (req, res, next) => {
     try {
-        const serviceProviders = await Service
-            .aggregate()
-            .lookup({
-                from: 'users',
-                localField: 'serviceProviderId',
-                foreignField: '_id',
-                as: 'serviceProviderId'
-            })
-            .project({
-                _id: true,
-                serviceName: true,
-                servicePrice: true,
-                serviceProviderId: {
-                    _id: true,
-                    name: true,
-                    userName: true,
-                    'location.city': true,
-                    'location.streetName': true,
-                    address: true,
-                    profilePic: true,
-                    availability: true
-                },
-                averageRating: true,
-                numberOfRatings: true,
-                ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
-            })
-            .sort({
-                ordersNumber: -1,
-                numberOfRatings: -1,
-                averageRating: -1
-            });
 
+        const token = req.header('x-auth-token');
+
+        const serviceProviders = await Service
+            .aggregate([
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'serviceProviderId',
+                        foreignField: '_id',
+                        as: 'serviceProvider'
+                    }
+                },
+                {
+                    $project: {
+                        _id: true,
+                        serviceName: true,
+                        servicePrice: true,
+                        serviceProvider: {
+                            _id: true,
+                            name: true,
+                            userName: true,
+                            'location.city': true,
+                            'location.streetName': true,
+                            address: true,
+                            profilePic: true,
+                            availability: true
+                        },
+                        averageRating: true,
+                        numberOfRatings: true,
+                        ordersNumber: { $size: { $ifNull: ['$ordersList', []] } }
+                    }
+                },
+                {
+                    $set: {
+                        favourite: false
+                    }
+                },
+                {
+                    $sort: {
+                        ordersNumber: -1,
+                        numberOfRatings: -1,
+                        averageRating: -1
+                    }
+                }
+            ]);
 
         if (serviceProviders.length === 0)
             return res.status(200).json({
                 message: 'No Service Providers Added Yet'
             });
 
+        if (token) {
+            const decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
+
+            let user = await User.findById(decodedToken._id);
+
+            if (!user)
+                return res.status(400).json({
+                    message: 'The User Sent In The Token not Found'
+                });
+
+            serviceProviders.forEach((service => {
+                if (user.favouritesList.includes(service._id)) {
+                    service.favourite = true;
+                } else {
+                    service.favourite = false;
+                }
+            }));
+        }
 
         return res.status(200).json({
             serviceProvidersCount: serviceProviders.length,
@@ -66,6 +98,11 @@ exports.topServiceProviders = async (req, res, next) => {
         });
 
     } catch (err) {
+        if (err.message.includes('Unexpected token'))
+            return res.status(400).json({
+                message: 'Invalid Token'
+            });
+
         res.status(500).json({
             message: err.message
         });
