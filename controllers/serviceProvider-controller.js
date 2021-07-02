@@ -70,6 +70,13 @@ exports.topServiceProviders = async (req, res, next) => {
                 message: 'No Service Providers Added Yet'
             });
 
+            await serviceProviders.map(serviceProvider=>{
+                //console.log(serviceProvider)
+                console.log(serviceProvider.averageRating)
+                if(serviceProvider.averageRating ===undefined){
+                    serviceProvider.averageRating = 1
+                }
+            })
        
         if (token) {
             const decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
@@ -89,7 +96,6 @@ exports.topServiceProviders = async (req, res, next) => {
                 }
             }));
         }
-        console.log(serviceProviders)
         return res.status(200).json({
             //serviceProvidersCount: serviceProviders.length,
              serviceProviders

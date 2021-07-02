@@ -38,7 +38,8 @@ const serviceSchema = new mongoose.Schema({
         type: String
     }],
     averageRating:{
-        type: Number
+        type: Number,
+        default: 1
     },
     numberOfRatings: {
         type: Number
