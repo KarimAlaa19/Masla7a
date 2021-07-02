@@ -6,7 +6,7 @@ const fs = require("fs");
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find().select("name");
+    const categories = await Category.find().select('-servicesList');
 
     if (!categories)
       return res.status(200).json({ message: "No categories added yet" });
