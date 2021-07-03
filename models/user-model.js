@@ -113,21 +113,21 @@ const userSchema = new mongoose.Schema({
     }],
     pushTokens: [
         new mongoose.Schema(
-          {
-            deviceType: {
-              type: String,
-              enum: ["android", "ios", "web"],
-              default: 'web',
-              required: true,
+            {
+                deviceType: {
+                    type: String,
+                    enum: ["android", "ios", "web"],
+                    default: 'web',
+                    required: true,
+                },
+                deviceToken: {
+                    type: String,
+                    required: true,
+                },
             },
-            deviceToken: {
-              type: String,
-              required: true,
-            },
-          },
-          { _id: false }
+            { _id: false }
         ),
-      ],
+    ],
 
 });
 
@@ -136,16 +136,16 @@ userSchema.methods.user_send_notification = async function (message) {
     let changed = false;
     let len = this.pushTokens.length;
     while (len--) {
-      const deviceToken = this.pushTokens[len].deviceToken;
-      try {
-        await notificationService.firebaseSendNotification(deviceToken, message);
-      }catch (err) {
-        this.pushTokens.splice(len, 1);
-        changed = true;
-      }
+        const deviceToken = this.pushTokens[len].deviceToken;
+        try {
+            await notificationService.firebaseSendNotification(deviceToken, message);
+        } catch (err) {
+            this.pushTokens.splice(len, 1);
+            changed = true;
+        }
     }
     if (changed) await this.save();
-  };
+};
 
 
 userSchema.methods.generateAuthToken = function () {

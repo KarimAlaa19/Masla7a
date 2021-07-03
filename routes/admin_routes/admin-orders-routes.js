@@ -1,11 +1,12 @@
 const express = require('express');
-const { getOrdersAdmin } = require('../../controllers/order-controller');
+const { getRecentOrders } =
+    require('../../controllers/admin-controllers/admin-order-controller');
 
 
 const router = express.Router();
 
-
-router.get('/', getOrdersAdmin);
+//Path /admin/control/orders/recent-orders
+router.get('/recent-orders', getRecentOrders);
 
 
 module.exports = router;

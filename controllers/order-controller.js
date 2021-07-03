@@ -5,8 +5,7 @@ const _ = require("lodash");
 const Order = require("../models/order-model");
 const Service = require("../models/service-model");
 const { validateCreateOrder } = require("../validators/order-validator");
-const { cleanObj } = require('../utils/filterHelpers');
-const { findById } = require("../models/order-model");
+
 
 exports.getUserOrders = async (req, res) => {
   try {
@@ -74,101 +73,6 @@ exports.getOrder = async (req, res) => {
   }
 };
 
-
-exports.getOrdersAdmin = async (req, res) => {
-
-  if (req.user.role !== 'admin')
-    return res.status(403).json({
-      message: 'Access Denied, Only Admins Can Access This'
-    });
-
-  try {
-
-    let queryData = {};
-
-    if (Object.keys(req.query).length > 0) {
-      queryData['serviceId.categoryId'] = req.query.category ?
-        mongoose.Types.ObjectId(req.query.category) : undefined;
-      queryData['status'] = req.query.status;
-
-      cleanObj(queryData);
-    }
-
-
-    console.log(queryData)
-
-    let orders = await Order
-      .aggregate()
-      .lookup({
-        from: 'services',
-        localField: 'serviceId',
-        foreignField: '_id',
-        as: 'serviceId'
-      })
-      .match(queryData)
-      .lookup({
-        from: 'categories',
-        localField: 'serviceId.categoryId',
-        foreignField: '_id',
-        as: 'category'
-      })
-      .lookup({
-        from: 'users',
-        localField: 'customerId',
-        foreignField: '_id',
-        as: 'customerId'
-      })
-      .lookup({
-        from: 'users',
-        localField: 'serviceProviderId',
-        foreignField: '_id',
-        as: 'serviceProviderId'
-      })
-      .project({
-        _id: true,
-        'customerId.name': true,
-        'serviceProviderId.name': true,
-        'serviceId.serviceName': true,
-        'category.name': true,
-        createdAt: true,
-        orderDate: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        address: true,
-        price: true,
-        location: true
-      })
-      .sort(sortBy(req.query.sort));
-
-    if (orders.length === 0)
-      return res.status(200).json({
-        message: 'Couldn\'t Found Any Orders'
-      });
-
-    return res.status(200).json({
-      count: orders.length,
-      orders: orders
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
-  }
-};
-
-
-function sortBy(sortFactor) {
-  switch (sortFactor) {
-    // case 'top-profit': 
-    //   return {};
-    case 'recently':
-    default:
-      return { createdAt: -1 };
-  }
-}
-
 exports.createOrder = async (req, res) => {
   const { error } = validateCreateOrder(req.body);
   if (error)
@@ -208,7 +112,7 @@ exports.createOrder = async (req, res) => {
         message: 'you can\'t set your order date to a past date'
       });
 
-    if (req.body.startsAt > req.body.endsAt)
+    if (req.body.startsAt >= req.body.endsAt)
       return res.status(400).json({
         message: 'The Time To Start The Order Is Earlier Than The Time To End It'
       });
@@ -249,11 +153,7 @@ exports.createOrder = async (req, res) => {
 
     req.body.serviceId = service._id;
 
-
     const order = new Order(req.body);
-
-    console.log(order)
-
 
     res.status(201).json({
       orderInfo: _.pick(order, [
@@ -299,8 +199,6 @@ exports.confirmOrder = async (req, res, next) => {
     const service = await Service.findById(req.body.serviceId)
 
     const order = await Order.create(req.body);
-
-    console.log(order)
 
     service.ordersList.push(order._id);
 
