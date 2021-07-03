@@ -1,6 +1,7 @@
 
 const express = require('express');
 const { extractingToken } = require('../controllers/user-auth');
+<<<<<<< HEAD
 const { getAllServiceReviews, postServiceReview, deleteMyReview, updateMyReview } = require('../controllers/reviews')
 const { getUserInfo,
     updateProfile,
@@ -8,6 +9,10 @@ const { getUserInfo,
     resetPassword,
     addIntoGallery,
     fixingProfilePic } = require('../controllers/profile')
+=======
+const {getAllServiceReviews, postServiceReview, deleteMyReview, updateMyReview} = require('../controllers/reviews')
+const {getUserInfo, updateProfile, changeProfilePic, resetPassword, addIntoGallery, fixingProfilePic} = require('../controllers/profile')
+>>>>>>> 2c7d79cda5a66bab89420edc66ab4b5ca031749e
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
@@ -36,6 +41,5 @@ router.put('/reviews/:id', extractingToken, updateMyReview);
 
 //Delete my review............PATH: '/my-profile/reviews/:id
 router.delete('/reviews/:id', extractingToken, deleteMyReview);
-
 
 module.exports = router;

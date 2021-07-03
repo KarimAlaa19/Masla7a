@@ -52,10 +52,10 @@ const userSchema = new mongoose.Schema({
     profilePic: {
         type: String,
         required: false,
-        default: function () {
-            if (this.gender === 'female')
-                return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
-            else {
+        default: function(){
+            if(this.gender==='female')
+            return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
+            else{
                 return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.21.40_PM_qpjbyx.jpg'
             }
         }

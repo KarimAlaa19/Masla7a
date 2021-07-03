@@ -37,7 +37,7 @@ const serviceSchema = new mongoose.Schema({
     gallery: [{
         type: String
     }],
-    averageRating: {
+    averageRating:{
         type: Number,
         default: 1
     },
