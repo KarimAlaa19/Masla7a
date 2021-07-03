@@ -5,16 +5,24 @@ const cloud = require("../images/images-controller/cloudinary");
 const fs = require("fs");
 
 exports.getAllCategories = async (req, res) => {
-  try {
-    const categories = await Category.find().select('-servicesListb');
+  // try {
+  //   const categories = await Category.find();
 
-    if (!categories)
-      return res.status(200).json({ message: "No categories added yet" });
+  //   if (!categories)
+  //     return res.status(200).json({ message: "No categories added yet" });
 
-    return res.status(200).json({ categories: categories });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  //   return res.status(200).json({ categories: categories });
+  // } catch (err) {
+  //   res.status(500).json({ error: err.message });
+  // }
+
+  const categories = await Category.find();
+  await categories.map(category=>{
+    console.log(category)
+  })
+  //console.log()
+   return res.status(200).json({ });
+
 };
 
 exports.addCategory = async (req, res) => {

@@ -45,6 +45,7 @@ exports.changeProfilePic = async (req, res, next) => {
         const result = await cloud.uploads(req.files[i].path);
         user.profilePic = result.url;
         fs.unlinkSync(req.files[i].path);
+        await user.save();
       }
     }
   }
@@ -52,7 +53,7 @@ exports.changeProfilePic = async (req, res, next) => {
 };
 //#endregion
 
-//#region change profile picture
+//#region update profile
 exports.updateProfile = async (req, res, next) => {
   const userID = req.user._id;
   const user = await User.updateOne(userID, req.body);
