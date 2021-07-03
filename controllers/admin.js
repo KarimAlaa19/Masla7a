@@ -3,17 +3,6 @@ const Service = require("../models/service-model");
 const Category = require('../models/category-model');
 const mongoose = require("mongoose");
 
-exports.getAllServiceProviders = async (req, res, next) => {
-  console.log(req.user);
-  if (req.user.role !== "admin")
-    return res.status(401).json({ message: "Unauthorized Admin" });
-
-  const serviceProviders = await User.find({ role: "serviceProvider" })
-    .populate("users")
-    .select("name _id userName profilePic ");
-  res.status(200).json({ result: serviceProviders });
-};
-
 
 exports.getUser = async (req, res, next) => {
   if (req.user.role !== "admin")
@@ -54,14 +43,4 @@ await category.save();
   }
 
   res.status(200).json({ message: "User deleted successfully" });
-};
-
-exports.getAllCustomers = async (req, res, next) => {
-  if (req.user.role !== "admin")
-    return res.status(401).json({ message: "Unauthorized Admin" });
-
-  const customers = await User.find({ role: "customer" })
-    .populate("users")
-    .select("name _id userName profilePic ");
-  res.status(200).json({ result: customers });
 };

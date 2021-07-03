@@ -51,7 +51,14 @@ const userSchema = new mongoose.Schema({
     },
     profilePic: {
         type: String,
-        required: false
+        required: false,
+        default: function () {
+            if (this.gender === 'female')
+                return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
+            else {
+                return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.21.40_PM_qpjbyx.jpg'
+            }
+        }
     },
     phone_number: {
         type: String,
@@ -106,21 +113,21 @@ const userSchema = new mongoose.Schema({
     }],
     pushTokens: [
         new mongoose.Schema(
-          {
-            deviceType: {
-              type: String,
-              enum: ["android", "ios", "web"],
-              default: 'web',
-              required: true,
+            {
+                deviceType: {
+                    type: String,
+                    enum: ["android", "ios", "web"],
+                    default: 'web',
+                    required: true,
+                },
+                deviceToken: {
+                    type: String,
+                    required: true,
+                },
             },
-            deviceToken: {
-              type: String,
-              required: true,
-            },
-          },
-          { _id: false }
+            { _id: false }
         ),
-      ],
+    ],
 
 });
 
@@ -129,16 +136,16 @@ userSchema.methods.user_send_notification = async function (message) {
     let changed = false;
     let len = this.pushTokens.length;
     while (len--) {
-      const deviceToken = this.pushTokens[len].deviceToken;
-      try {
-        await notificationService.firebaseSendNotification(deviceToken, message);
-      }catch (err) {
-        this.pushTokens.splice(len, 1);
-        changed = true;
-      }
+        const deviceToken = this.pushTokens[len].deviceToken;
+        try {
+            await notificationService.firebaseSendNotification(deviceToken, message);
+        } catch (err) {
+            this.pushTokens.splice(len, 1);
+            changed = true;
+        }
     }
     if (changed) await this.save();
-  };
+};
 
 
 userSchema.methods.generateAuthToken = function () {
