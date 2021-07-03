@@ -3,17 +3,7 @@ const Category = require("../models/category-model");
 
 exports.getAllCategories = async (req, res) => {
   try {
-<<<<<<< HEAD
     const categories = await Category.find();
-=======
-    const categories = await Category
-      .find()
-      .select({
-        name: 1,
-        coverPhoto: 1,
-        icon: 1
-      });
->>>>>>> 1c859c109474da0bacb66f523a29ade2fa4505d0
 
     if (!categories)
       return res.status(200).json({ message: "No categories added yet" });
@@ -22,7 +12,6 @@ exports.getAllCategories = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-<<<<<<< HEAD
   
 };
 
@@ -123,6 +112,9 @@ exports.deleteCategory = async (req, res) => {
   }
 };
 
+
+
+
 exports.getAllServicesInCategory = async (req, res) => {
   if (req.user.role !== "admin")
     return res.status(403).json({
@@ -155,6 +147,3 @@ exports.getAllServicesInCategory = async (req, res) => {
     });
   }
 };
-=======
-};
->>>>>>> 1c859c109474da0bacb66f523a29ade2fa4505d0
