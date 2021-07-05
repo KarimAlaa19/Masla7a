@@ -2,7 +2,12 @@
 const express = require('express');
 const { extractingToken } = require('../controllers/user-auth');
 const { getAllServiceReviews, postServiceReview, deleteMyReview, updateMyReview } = require('../controllers/reviews')
-const { getUserInfo,updateProfile,changeProfilePic,resetPassword,addIntoGallery } = require('../controllers/profile')
+const { getUserInfo,
+    updateProfile,
+    changeProfilePic,
+    resetPassword,
+    addIntoGallery,
+    fixingProfilePic } = require('../controllers/profile')
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
