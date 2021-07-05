@@ -28,10 +28,9 @@ const addUser = async (req, res) => {
     role: req.body.role,
     address: req.body.address,
   });
-  if(req.body.deviceToken && req.body.deviceType){
+  if(req.body.deviceToken ){
     let pushToken = {
-      deviceToken : req.body.deviceToken,
-      deviceType :req.body.deviceType
+      deviceToken : req.body.deviceToken
     }
     console.log(pushToken)
     await user.pushToken.push(pushToken);
