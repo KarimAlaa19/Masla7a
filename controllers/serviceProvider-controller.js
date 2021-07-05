@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 const config = require('config');
 const mongoose = require('mongoose');
 const Fuse = require('fuse.js');
-const geolib = require('geolib');
 const Service = require('../models/service-model');
 const Category = require('../models/category-model');
 const User = require('..//models/user-model');
@@ -10,11 +9,9 @@ const { cleanObj } = require('../utils/filterHelpers');
 
 const options = {
     minMatchCharLength: 1,
-    threshold: 0.3,
+    threshold: 0.2,
     keys: [
-        'serviceName',
-        'serviceProviderId.name',
-        'serviceProviderId.userName'
+        'name'
     ]
 };
 
@@ -68,6 +65,7 @@ exports.topServiceProviders = async (req, res, next) => {
 
         if (serviceProviders.length === 0)
             return res.status(200).json({
+                hasContent: false,
                 message: 'No Service Providers Added Yet'
             });
 
@@ -127,7 +125,10 @@ exports.filterServices = async (req, res, next) => {
 
         let locationData = {};
 
+        let aggregate = [];
+
         let decodedToken;
+
 
         if (token) {
             decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
@@ -149,10 +150,10 @@ exports.filterServices = async (req, res, next) => {
 
 
         const queryData = {
-            categoryId: !req.params.categoryId ?
+            'serviceId.categoryId': !req.params.categoryId ?
                 undefined : mongoose.Types.ObjectId(req.params.categoryId),
 
-            averageRating: ((!req.query.rating) || (req.query.rating <= 0.4)) ?
+            'serviceId.averageRating': ((!req.query.rating) || (req.query.rating <= 0.4)) ?
                 undefined : { $gte: Number(req.query.rating) }
         };
 
@@ -166,7 +167,7 @@ exports.filterServices = async (req, res, next) => {
 
         {
             //locationData = {
-            //     'serviceProviderId.location.city': req.query.city === undefined ?
+            //     'location.city': req.query.city === undefined ?
             //         undefined : new RegExp(`.*${req.query.city}.*`, 'i')
             // };
 
@@ -175,10 +176,10 @@ exports.filterServices = async (req, res, next) => {
                 decodedToken.gotAddress === true) {
                 var user = await User.findById(decodedToken._id);
                 locationData = {
-                    //     'serviceProviderId.location.city': req.query.city === undefined ?
+                    //     'location.city': req.query.city === undefined ?
                     //         user.location.city : new RegExp(`.*${req.query.city}.*`, 'i'),
 
-                    'serviceProviderId.location': (req.query.distance === undefined ||
+                    location: (req.query.distance === undefined ||
                         req.query.distance === 0) ?
                         undefined : {
                             $geoWithin: {
@@ -190,6 +191,20 @@ exports.filterServices = async (req, res, next) => {
                         }
                 }
                 var userCoordinates = user.location.coordinates;
+
+                aggregate = [
+                    {
+                        $geoNear: {
+                            near: {
+                                type: "Point",
+                                coordinates: userCoordinates
+                            },
+                            distanceField: 'distance',
+                            spherical: true,
+                            distanceMultiplier: 0.001
+                        }
+                    }
+                ];
             }
 
             cleanObj(locationData)
@@ -200,21 +215,42 @@ exports.filterServices = async (req, res, next) => {
 
 
         if (Object.keys(servicePrice).length > 0)
-            queryData.servicePrice = servicePrice;
+            queryData['serviceId.servicePrice'] = servicePrice;
 
 
-        let services = await Service
+
+        let serviceProviders = await User
             .aggregate([
+                ...aggregate,
                 {
                     $lookup: {
-                        from: 'users',
-                        localField: 'serviceProviderId',
+                        from: 'services',
+                        localField: 'serviceId',
                         foreignField: '_id',
-                        as: 'serviceProviderId'
+                        as: 'serviceId'
                     }
                 },
                 {
-                    $match: { ...queryData, ...locationData }
+                    $set: {
+                        serviceId: { $first: '$serviceId' }
+                    }
+                },
+                {
+                    $set: {
+                        'serviceId.averageRating': {
+                            $ifNull:
+                                ['$serviceId.averageRating',
+                                    1]
+                        },
+                        'serviceId.numberOfRatings': {
+                            $ifNull:
+                                ['$serviceId.numberOfRatings',
+                                    0]
+                        },
+                    }
+                },
+                {
+                    $match: { ...queryData, ...locationData, role: 'serviceProvider' }
                 },
                 {
                     $set: {
@@ -224,21 +260,26 @@ exports.filterServices = async (req, res, next) => {
                 {
                     $project: {
                         _id: true,
-                        serviceName: true,
-                        servicePrice: true,
-                        serviceProvider: {
-                            _id: { $first: '$serviceProviderId._id' },
-                            name: { $first: '$serviceProviderId.name' },
-                            userName: { $first: '$serviceProviderId.userName' },
-                            profilePic: { $first: '$serviceProviderId.profilePic' },
-                            availability: { $first: '$serviceProviderId.availability' },
-                            'location.coordinates': {
-                                $first: '$serviceProviderId.location.coordinates'
+                        name: true,
+                        userName: true,
+                        profilePic: true,
+                        availability: true,
+                        distance: true,
+                        favourite: true,
+                        service: {
+                            _id: '$serviceId._id',
+                            serviceName: '$serviceId.serviceName',
+                            servicePrice: '$serviceId.servicePrice',
+                            averageRating: '$serviceId.averageRating',
+                            numberOfRatings: '$serviceId.numberOfRatings',
+                            numberOfOrders: {
+                                $size: {
+                                    $ifNull:
+                                        ['$serviceId.ordersList',
+                                            []]
+                                }
                             }
-                        },
-                        averageRating: true,
-                        numberOfRatings: true,
-                        numberOfOrders: { $size: { $ifNull: ['$ordersList', []] } }
+                        }
                     }
                 },
                 {
@@ -247,69 +288,53 @@ exports.filterServices = async (req, res, next) => {
             ]);
 
 
-        if (services.length === 0)
-            return res.status(200).json({
-                message: 'Could Not Find Any Service'
-            });
 
-
-        if (token) {
-            if (!userToken)
-                return res.status(400).json({
-                    message: 'The User Sent In The Token not Found'
-                });
-
-            services.forEach((service => {
-                if (userToken.favouritesList.includes(service._id)) {
-                    service.favourite = true;
+        if (userToken) {
+            serviceProviders.forEach((serviceProvider => {
+                if (userToken.favouritesList.includes(serviceProvider.service._id)) {
+                    serviceProvider.favourite = true;
                 }
             }));
         }
 
 
         if (req.query.search) {
-            let servicesList = [];
-            const fuse = new Fuse(services, options);
-
-            fuse.search(req.query.search).forEach(service => {
-                servicesList.push(service.item);
-            });
-            services = servicesList;
-        }
-
-        if (token &&
-            decodedToken.gotAddress === true) {
-            services.forEach(element => {
-                element.distance = (geolib.getPreciseDistance(
-                    {
-                        latitude: userCoordinates[1],
-                        longitude: userCoordinates[0]
-                    },
-                    {
-                        latitude: element.serviceProvider.location.coordinates[1],
-                        longitude: element.serviceProvider.location.coordinates[0]
-                    },
-                    10
-                ) / 1000);
-                delete element.serviceProvider.location;
-            });
-        } else {
-            services.forEach(element => {
-                element.distance = 0;
-                delete element.serviceProvider.location;
-            });
-        }
-
-        services.map(service => {
-            if (!service.averageRating) {
-                service.averageRating = 1
+            req.query.search = req.query.search.trim();
+            if (req.query.search[0] === '@') {
+                options.keys = ['userName'];
+                console.log(req.query.search);
+                req.query.search = req.query.search.substring(1);
+                console.log(req.query.search);
+            } else if (req.query.search[0] === '#') {
+                options.keys = ['service.serviceName'];
+                console.log(req.query.search);
+                req.query.search = req.query.search.substring(1);
+                console.log(req.query.search);
             }
+
+            let serviceProvidersList = [];
+            const fuse = new Fuse(serviceProviders, options);
+
+            fuse.search(req.query.search).forEach(serviceProvider => {
+                serviceProvidersList.push(serviceProvider.item);
+            });
+            serviceProviders = serviceProvidersList;
+        }
+
+
+        serviceProviders.map(serviceProvider => {
+            serviceProvider.distance = serviceProvider.distance.toFixed(1);
         });
 
+        if (serviceProviders.length === 0)
+            return res.status(200).json({
+                hasContent: false,
+                message: 'Could Not Find Any Service Provider'
+            });
 
         res.json({
-            count: services.length,
-            services: services
+            count: serviceProviders.length,
+            serviceProviders: serviceProviders
         });
 
     } catch (err) {
@@ -326,19 +351,23 @@ exports.filterServices = async (req, res, next) => {
 function sortBy(sortFactor) {
     switch (sortFactor) {
         case 'price_asc':
-            return { servicePrice: 1 };
+            return { 'service.servicePrice': 1 };
         case 'price_desc':
-            return { servicePrice: -1 };
+            return { 'service.servicePrice': -1 };
         case 'most_rated':
             return {
-                averageRating: -1,
-                numberOfRatings: -1
+                'service.averageRating': -1,
+                'service.numberOfRatings': -1
+            };
+        case 'nearest':
+            return {
+                distance: 1
             };
         case 'popularity':
         default:
             return {
-                numberOfOrders: -1,
-                numberOfRatings: -1,
+                'service.numberOfOrders': -1,
+                'service.numberOfRatings': -1,
             };
     }
 }

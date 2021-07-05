@@ -78,6 +78,7 @@ exports.getFavourites = async (req, res, next) => {
 
         if (favourites.length === 0)
             return res.status(200).json({
+                count: favourites.length,
                 message: 'Your Favorites list is empty.'
             });
 
@@ -129,7 +130,7 @@ exports.addToFavourites = async (req, res, next) => {
             return res.status(400).json({
                 message: 'The User not found'
             });
-        
+
         const service = await Service.findOne({
             serviceProviderId: req.body.serviceProviderId
         }).populate('serviceProviderId');
@@ -144,8 +145,6 @@ exports.addToFavourites = async (req, res, next) => {
         const isFavourite =
             user.favouritesList.includes(service._id);
 
-        console.log(isFavourite)
-
         if (isFavourite)
             return res.status(400).json({
                 message: 'The Service Provider Already Added To Favourites'
@@ -156,12 +155,14 @@ exports.addToFavourites = async (req, res, next) => {
         await user.save();
 
         return res.status(201).json({
-            favouriteService: service
+            status: true,
+            message: 'Added Successfully'
         });
 
     } catch (err) {
         res.status(500).json({
-            message: err.message
+            message: err.message,
+            status: false
         });
     }
 };
@@ -185,7 +186,7 @@ exports.removeFromFavourites = async (req, res, next) => {
                 message: 'The User not found'
             });
 
-            
+
         const service = await Service.findOne({
             serviceProviderId: req.params.serviceProviderId
         }).populate('serviceProviderId');
@@ -211,11 +212,13 @@ exports.removeFromFavourites = async (req, res, next) => {
         await user.save();
 
         return res.status(200).json({
-            service: service
+            status: true,
+            message: 'Deleted Successfully'
         });
 
     } catch (err) {
         res.status(500).json({
+            status: false,
             message: err.message
         });
     }
