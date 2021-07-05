@@ -322,9 +322,9 @@ exports.filterServices = async (req, res, next) => {
         }
 
 
-        serviceProviders.map(serviceProvider => {
-            serviceProvider.distance = serviceProvider.distance.toFixed(1);
-        });
+        // serviceProviders.map(serviceProvider => {
+        //     serviceProvider.distance = serviceProvider.distance.toFixed(1);
+        // });
 
         if (serviceProviders.length === 0)
             return res.status(200).json({
