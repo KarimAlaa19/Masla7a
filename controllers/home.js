@@ -1,7 +1,6 @@
 const User = require("../models/user-model");
 const mongoose = require("mongoose");
 const _ = require("lodash");
-const { forEach } = require("lodash");
 
 exports.homePage = async (req, res) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
@@ -18,6 +17,7 @@ exports.homePage = async (req, res) => {
 
   res.status(200).json({ user: userInfo });
 };
+<<<<<<< HEAD
 
 exports.getAllServiceProviders = async (req, res)=>{
 
@@ -54,3 +54,5 @@ exports.getAllServiceProviders = async (req, res)=>{
   console.log(obj)
   return res.status(200).json({serviceProviders})
 }
+=======
+>>>>>>> 6e678fbddbb354c8dd8ec59f51972baf3d46bd0c
