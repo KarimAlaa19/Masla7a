@@ -29,12 +29,13 @@ const addUser = async (req, res) => {
     address: req.body.address,
   });
   if(req.body.deviceToken ){
+    console.log('helloooo')
     let pushToken = {
       deviceToken : req.body.deviceToken
     }
-    console.log(pushToken)
-    await user.pushToken.push(pushToken);
-    await user.save();
+    console.log('Before pushing '+pushToken)
+    await user.pushTokens.push(pushToken);
+    console.log(user.pushTokens[0]);
   }
   // Reading files
   if (req.files) {
