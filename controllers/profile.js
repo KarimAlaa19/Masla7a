@@ -1,5 +1,6 @@
 const User = require("../models/user-model");
 const Service = require("../models/service-model");
+const Order = require('../models/order-model')
 const Review = require("../models/review");
 const Category = require("../models/category-model");
 const validator = require("../validators/user-validator");
@@ -15,23 +16,45 @@ const fs = require("fs");
 exports.getUserInfo = async (req, res, next) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
-  const userID = mongoose.Types.ObjectId(req.params.id);
-  const user = await User.findById(userID);
-  if (!user)
+  const serviceProviderId = mongoose.Types.ObjectId(req.params.id);
+  const serviceProvider = await User.findById(serviceProviderId);
+  if (!serviceProvider)
     return res.status(400).json({ message: "There is no User with such ID " });
-  if (user.role !== "serviceProvider")
-    return res.status(401).json({ message: "Not allowed" });
 
-  const userInfo = await User.findById(userID)
-    .populate("users")
+  const userInfo = await User.findById(serviceProviderId)
     .select("name userName profilePic gallery availability gender age");
-  const service = await Service.findOne({ serviceProviderId: userID })
-    .populate("services")
-    .select("serviceName servicePrice description gallery averageRating numberOfRatings");
+  const service = await Service.findOne({ serviceProviderId: serviceProviderId })
+    .select("-categoryId -ordersList -serviceProviderId");
   const reviews = await Review.find({ serviceID: service._id })
     .populate("user", "name profilePic -_id")
     .select("title content rating _id");
-  res.status(200).json({ serviceProviderInfo: userInfo, service: service , reviewsDetails: reviews});
+
+  const appointments = await Order.find({
+    serviceProviderId: serviceProviderId, status:{$nin:  ['completed', 'canceled']}
+  }).select("orderDate startsAt endsAt");
+
+  console.log(appointments.length)
+   appointments.map( appointment=>{
+     let newStart = appointment.startsAt.toString("dd/MM/yyyy HH:mm:ss")
+    appointment.startsAt = 'newStart'
+    appointment.endsAt =  appointment.endsAt.toString("dd/MM/yyyy HH:mm:ss")
+ 
+    console.log(newStart)
+
+    // console.log( appointment.startsAt.toString("dd/MM/yyyy HH:mm:ss"))
+    // // const currentDate = new Date();
+    // if(currentDate>= appointment.startsAt && currentDate<=appointment.endsAt){
+    //   console.log('Busy');
+    // }
+    // else{
+    //   console.log('OH NO..')
+    // }
+  })
+  appointments[0].startsAt = new Date();
+  
+  console.log( appointments[0].startsAt)
+
+  res.status(200).json({ serviceProviderInfo: userInfo, service: service , reviewsDetails: reviews,schedule :appointments});
 };
 //#endregion
 
@@ -121,3 +144,18 @@ exports.addIntoGallery = async (req, res, next) => {
 };
 //#endregion
 
+exports.serviceProviderSchedule = async (req, res) => {
+  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+
+  const serviceProviderId = mongoose.Types.ObjectId(req.params.id);
+  const ordersSchdule = await Order.find({
+    serviceProviderId: serviceProviderId,
+  }).select("orderDate startsAt endsAt");
+  const serviceProvider = await User.findById(serviceProviderId);
+
+  await ordersSchdule.map(order=>{
+    console.log(order);
+    console.log('here')
+  })
+  return res.status(200).json({serviceProvider, ordersSchdule})
+};

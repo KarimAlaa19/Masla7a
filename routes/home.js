@@ -1,5 +1,6 @@
 const express = require('express');
-const { homePage } = require('../controllers/home');
+const { homePage , getAllServiceProviders} = require('../controllers/home');
+
 const { topServiceProviders, filterServices } = require('../controllers/serviceProvider-controller');
 
 
@@ -10,6 +11,8 @@ router.get('/top-workers', topServiceProviders);
 router.get('/search', filterServices);
 
 router.get('/:id', homePage);
+
+router.get('/service-providers/:id', getAllServiceProviders);
 
 
 module.exports = router;
