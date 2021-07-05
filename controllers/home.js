@@ -38,17 +38,19 @@ exports.getAllServiceProviders = async (req, res)=>{
     if(user.favouritesList.includes(serviceProvider.serviceId._id)){
       //console.log('YES')
       serviceProvider.favourite = true
-      console.log(serviceProvider.favourite)
+      //console.log(serviceProvider.favourite)
     }
     else{
       //console.log('NO')
       serviceProvider.favourite= false;
-      console.log(serviceProvider.favourite)
-
+     // console.log(serviceProvider.favourite)
     }
-    
   })
-  //console.log(serviceProviders)
+  
+  console.log(serviceProviders[0].favourite)
 
+  const obj = [{name:'reem', email:'olaa'},{name:'arwa',email:'plaaa'}]
+  obj[0].favourite = false 
+  console.log(obj)
   return res.status(200).json({serviceProviders})
 }
