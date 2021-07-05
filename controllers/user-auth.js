@@ -34,6 +34,7 @@ const addUser = async (req, res) => {
     }
     console.log(pushToken)
     await user.pushToken.push(pushToken);
+    await user.save();
   }
   // Reading files
   if (req.files) {
