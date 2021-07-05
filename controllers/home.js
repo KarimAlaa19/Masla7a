@@ -17,7 +17,6 @@ exports.homePage = async (req, res) => {
 
   res.status(200).json({ user: userInfo });
 };
-<<<<<<< HEAD
 
 exports.getAllServiceProviders = async (req, res)=>{
 
@@ -54,5 +53,3 @@ exports.getAllServiceProviders = async (req, res)=>{
   console.log(obj)
   return res.status(200).json({serviceProviders})
 }
-=======
->>>>>>> 6e678fbddbb354c8dd8ec59f51972baf3d46bd0c
