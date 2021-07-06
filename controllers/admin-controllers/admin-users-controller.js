@@ -226,7 +226,7 @@ exports.getAllCustomers = async (req, res) => {
                 phone_number: true,
                 city: '$location.city',
             })
-            .sort();
+            .sort(sortBy(req.query.sort));
 
         if (req.query.search) {
             const usersList = [];
@@ -258,6 +258,71 @@ exports.getAllCustomers = async (req, res) => {
         });
     }
 };
+
+
+// exports.getCustomer = async (req, res) => {
+//     if (req.user.role !== 'admin')
+//         return res.status(403).json({
+//             message: 'Access Denied, Only Admins Can Access This'
+//         });
+
+//     try {
+
+//         let queryData = {};
+
+//         if (req.query.date_from && req.query.date_to) {
+//             if (new Date(req.query.date_from) > new Date(req.query.date_to))
+//                 return res.status(400).json({
+//                     message: 'The Start Date is Greater Than The End Date.'
+//                 })
+//         }
+
+//         const orderDate = {
+//             $gte: !req.query.date_from ?
+//                 undefined : new Date(req.query.date_from),
+//             $lte: !req.query.date_to ?
+//                 undefined : new Date(req.query.date_to)
+//         };
+
+//         cleanObj(orderDate);
+
+
+//         if (Object.keys(orderDate).length > 0) {
+//             queryData.orderDate = orderDate
+//         }
+
+
+
+//         const user = await Orders
+//             .aggregate([
+//                 {
+//                     $match: {
+//                         customerId: req.params.customerId
+//                     }
+//                 },
+//                 // {
+//                 //     $group: {
+//                 //         _id: {
+//                 //             'customerId': req.params.customerId,
+//                 //         },
+//                 //         totalNumberOfOrders: { $sum: 1 }
+//                 //     }
+//                 // }
+//             ]);
+
+
+
+//         res.status(200).json({
+//             // numberOfOrders: user.ordersList.length,
+//             user: user
+//         });
+
+//     } catch (err) {
+//         res.status(500).json({
+//             message: err.message
+//         });
+//     }
+// };
 
 
 exports.getActiveCustomers = async (req, res) => {
@@ -393,10 +458,17 @@ exports.getAllServiceProviders = async (req, res) => {
                         name: { $first: '$serviceProvider.name' },
                         userName: { $first: '$serviceProvider.userName' },
                         email: { $first: '$serviceProvider.email' },
+                        profilePic: { $first: '$serviceProvider.profilePic' },
                         city: { $first: '$serviceProvider.location.city' },
                         phone: { $first: '$serviceProvider.phone' },
                         averageRating: true,
-                        numberOfRatings: true
+                        numberOfRatings: true,
+                        numberOfOrders: {
+                            $size: {
+                                $ifNull:
+                                    ['$ordersList', []]
+                            }
+                        }
                     }
                 },
                 {
@@ -431,6 +503,24 @@ exports.getAllServiceProviders = async (req, res) => {
         });
     }
 };
+
+
+// exports.getServiceProvider = async (req, res) => {
+//     if (req.user.role !== 'admin')
+//         return res.status(403).json({
+//             message: 'Access Denied, Only Admins Can Access This'
+//         });
+
+//     try {
+
+
+
+//     } catch (err) {
+//         res.status(500).json({
+//             message: err.message
+//         });
+//     }
+// };
 
 
 exports.getTopServiceProviders = async (req, res, next) => {
@@ -521,7 +611,7 @@ exports.getTopServiceProviders = async (req, res, next) => {
             ]);
 
 
-        if (serviceProviders.length < 7) {
+        if (serviceProviders.length < 2) {
             // const spCheck = [];
             // serviceProviders.forEach(sp => {
             //     spCheck.push(mongoose.Types.ObjectId(sp._id));
@@ -603,6 +693,10 @@ function sortBy(sortFactor) {
             return { name: 1 };
         case 'name_desc':
             return { name: -1 };
+        case 'orders_asc':
+            return { numberOfOrders: 1 };
+        case 'orders_desc':
+            return { numberOfOrders: -1 };
         case 'rating_asc':
             return {
                 averageRating: 1,

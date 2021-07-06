@@ -7,7 +7,10 @@ const { getNewUswes,
     getAllUsersRole,
     getTopServiceProviders,
     getAllCustomers,
-    getAllServiceProviders } = require('../../controllers/admin-controllers/admin-users-controller');
+    getAllServiceProviders,
+    // getCustomer 
+} =
+    require('../../controllers/admin-controllers/admin-users-controller');
 
 
 const router = express.Router();
@@ -33,6 +36,9 @@ router.get('/total-users-roles', getAllUsersRole);
 
 //Path /admin/control/users/customers
 router.get('/customers', getAllCustomers);
+
+// //Path /admin/control/users/customers/:id
+// router.get('/customers/:customerId', getCustomer);
 
 //Path /admin/control/users/active-customers
 router.get('/active-customers', getActiveCustomers);
