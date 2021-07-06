@@ -25,7 +25,7 @@ exports.validateSignUp = (user) => {
         role: Joi.string().required(),
         address: Joi.string(),
         deviceType: Joi.string(),
-        deviceToken : Joi.string()
+        deviceToken : Joi.string().required()
     });
 
     return schema.validate(user);
