@@ -4,6 +4,7 @@ const User = require('../../models/user-model');
 const Order = require('../../models/order-model');
 const Service = require('../../models/service-model');
 const { cleanObj } = require('../../utils/filterHelpers');
+const { split } = require('lodash');
 
 
 const options = {
@@ -214,7 +215,7 @@ exports.getAllCustomers = async (req, res) => {
 
     try {
 
-        const users = await User
+        let users = await User
             .find({
                 role: 'customer'
             })
@@ -227,18 +228,23 @@ exports.getAllCustomers = async (req, res) => {
             })
             .sort();
 
+        if (req.query.search) {
+            const usersList = [];
+            const fuse = new Fuse(users, options);
+
+            fuse.search(req.query.search).forEach(user => {
+                usersList.push(user.item);
+            });
+
+            users = usersList;
+        }
 
         if (users.length === 0)
             return res.status(200).json({
-                message: 'No Users Added Yet'
+                message: 'No Users With This Specifications'
             });
 
 
-        if (req.query.search) {
-            const fuse = new Fuse(services, options);
-
-            services = fuse.search(req.query.search);
-        }
 
 
         res.status(200).json({
@@ -361,8 +367,6 @@ exports.getAllServiceProviders = async (req, res) => {
 
     try {
 
-
-
         let serviceProviders = await Service
             .aggregate([
                 {
@@ -371,6 +375,16 @@ exports.getAllServiceProviders = async (req, res) => {
                         localField: 'serviceProviderId',
                         foreignField: '_id',
                         as: 'serviceProvider'
+                    }
+                },
+                {
+                    $set: {
+                        averageRating: {
+                            $ifNull: ['$averageRating', 1],
+                        },
+                        numberOfRatings: {
+                            $ifNull: ['$numberOfRatings', 0],
+                        }
                     }
                 },
                 {
@@ -390,24 +404,21 @@ exports.getAllServiceProviders = async (req, res) => {
                 }
             ]);
 
+        if (req.query.search) {
+            const spList = [];
+
+            const fuse = new Fuse(serviceProviders, options);
+            fuse.search(req.query.search).forEach(serviceProvider => {
+                spList.push(serviceProvider.item);
+            })
+            serviceProviders = spList;
+        }
+
 
         if (serviceProviders.length === 0)
             return res.status(200).json({
                 message: 'No Service Providers Added Yet'
             });
-
-        if (req.query.search) {
-            const fuse = new Fuse(serviceProviders, options);
-
-            serviceProviders = fuse.search(req.query.search);
-        }
-
-        await serviceProviders.map(serviceProvider => {
-            console.log(serviceProvider.averageRating)
-            if (serviceProvider.averageRating === undefined) {
-                serviceProvider.averageRating = 1
-            }
-        });
 
         res.status(200).json({
             serviceProvidersCount: serviceProviders.length,
@@ -603,6 +614,6 @@ function sortBy(sortFactor) {
                 averageRating: -1,
             };
         default:
-            return {_id: 1};
+            return { _id: 1 };
     }
 }

@@ -29,17 +29,26 @@ exports.topServiceProviders = async (req, res, next) => {
                         from: 'users',
                         localField: 'serviceProviderId',
                         foreignField: '_id',
-                        as: 'serviceProvider'
+                        as: 'serviceProviderId'
+                    }
+                },
+                {
+                    $set: {
+                        favourite: false,
+                        averageRating: { $ifNull: ['$averageRating', 1] },
+                        numberOfRatings: { $ifNull: ['$numberOfRatings', 0] },
+                        serviceProvider: { $first: '$serviceProviderId' }
                     }
                 },
                 {
                     $project: {
-                        _id: false,
+                        _id: true,
                         serviceName: true,
                         servicePrice: true,
                         averageRating: true,
                         numberOfRatings: true,
                         ordersNumber: { $size: { $ifNull: ['$ordersList', []] } },
+                        favourite: true,
                         serviceProvider: {
                             _id: true,
                             name: true,
@@ -47,11 +56,6 @@ exports.topServiceProviders = async (req, res, next) => {
                             profilePic: true,
                             availability: true
                         }
-                    }
-                },
-                {
-                    $set: {
-                        favourite: false
                     }
                 },
                 {
@@ -89,14 +93,12 @@ exports.topServiceProviders = async (req, res, next) => {
             serviceProviders.forEach((service => {
                 if (user.favouritesList.includes(service._id)) {
                     service.favourite = true;
-                } else {
-                    service.favourite = false;
                 }
             }));
         }
         return res.status(200).json({
-            //serviceProvidersCount: serviceProviders.length,
-            serviceProviders
+            serviceProvidersCount: serviceProviders.length,
+            serviceProviders: serviceProviders
         });
 
     } catch (err) {
@@ -302,14 +304,10 @@ exports.filterServices = async (req, res, next) => {
             req.query.search = req.query.search.trim();
             if (req.query.search[0] === '@') {
                 options.keys = ['userName'];
-                console.log(req.query.search);
                 req.query.search = req.query.search.substring(1);
-                console.log(req.query.search);
             } else if (req.query.search[0] === '#') {
                 options.keys = ['service.serviceName'];
-                console.log(req.query.search);
                 req.query.search = req.query.search.substring(1);
-                console.log(req.query.search);
             }
 
             let serviceProvidersList = [];

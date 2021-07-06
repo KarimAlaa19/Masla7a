@@ -54,6 +54,17 @@ exports.getFavourites = async (req, res, next) => {
                     }
                 },
                 {
+                    $set: {
+                        'service.averageRating': {
+                            $ifNull: ['$service.averageRating', 1]
+                        },
+                        'service.numberOfRatings': {
+                            $ifNull: ['$service.numberOfRatings', 0]
+                        }
+
+                    }
+                },
+                {
                     $project: {
                         _id: 0,
                         'location.coordinates': 1,
@@ -97,7 +108,6 @@ exports.getFavourites = async (req, res, next) => {
             ) / 1000);
             delete element.location;
             delete element.serviceProvider.location;
-            console.log(element.service.serviceName)
         });
 
         return res.status(200).json({
