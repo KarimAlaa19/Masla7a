@@ -1,6 +1,7 @@
 const User = require("../models/user-model");
 const Service = require("../models/service-model");
 const Review = require("../models/review");
+const Order = require("../models/order-model");
 const Category = require("../models/category-model");
 const validator = require("../validators/user-validator");
 const config = require("config");
@@ -16,22 +17,35 @@ exports.getUserInfo = async (req, res, next) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
   const userID = mongoose.Types.ObjectId(req.params.id);
-  const user = await User.findById(userID);
+  const user = await User.findById(userID)
+  .select("name userName profilePic gallery availability gender age");
+
   if (!user)
     return res.status(400).json({ message: "There is no User with such ID " });
-  if (user.role !== "serviceProvider")
-    return res.status(401).json({ message: "Not allowed" });
 
-  const userInfo = await User.findById(userID)
-    .populate("users")
-    .select("name userName profilePic gallery availability gender age");
   const service = await Service.findOne({ serviceProviderId: userID })
     .populate("services")
     .select("serviceName servicePrice description gallery averageRating numberOfRatings");
   const reviews = await Review.find({ serviceID: service._id })
     .populate("user", "name profilePic -_id")
     .select("title content rating _id");
-  res.status(200).json({ serviceProviderInfo: userInfo, service: service , reviewsDetails: reviews});
+
+  const schedule = await Order
+  .find({serviceProviderId:userID, status:{$nin:['completed','canceled']}})
+
+  
+  //Changing Avaibility Of The Service Provider Into Busy If He/She 
+ if(schedule){
+  let currentDate = new Date()
+  currentDate.setHours( currentDate.getHours() + 2 )
+  schedule.map(appointment=>{
+    if(currentDate>= appointment.startsAt && currentDate <=appointment.endsAt){
+      user.availability = 'busy'
+    }
+  })
+ }
+
+  res.status(200).json({ serviceProviderInfo: user, service: service , reviewsDetails: reviews});
 };
 //#endregion
 
@@ -121,3 +135,36 @@ exports.addIntoGallery = async (req, res, next) => {
 };
 //#endregion
 
+exports.schedule = async (req, res)=>{
+  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+
+  const serviceProviderID = mongoose.Types.ObjectId(req.params.id);
+
+  //Getting Service Provider
+  const serviceProvider = await User
+  .findById(serviceProviderID)
+  .populate('serviceId','serviceName servicePrice averageRating numberOfRatings')
+  .select('name gender userName phone_number _id profilePic availability')
+
+  //Getting The Schedule Of The Service Provider
+  const schedule = await Order
+  .find({serviceProviderId:serviceProviderID, status:{$nin:['completed','canceled']}})
+  .select('orderDate startsAt endsAt notes')
+  if(!schedule)
+  return res.status(200).json({message: 'NO ORDERS IN THE SCHEDULE YET'});
+
+  //Changing Avaibility Of The Service Provider Into Busy If He/She 
+  let currentDate = new Date()
+  currentDate.setHours( currentDate.getHours() + 2 )
+  schedule.map(appointment=>{
+    if(currentDate>= appointment.startsAt && currentDate <=appointment.endsAt){
+      serviceProvider.availability = 'busy'
+    }
+  })
+
+ return res.status(200).json({serviceProvider,schedule}); 
+}
+
+exports.editScheduleNotes = async (req, res)=>{
+
+}

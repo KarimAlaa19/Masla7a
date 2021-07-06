@@ -2,20 +2,17 @@
 const express = require('express');
 const { extractingToken } = require('../controllers/user-auth');
 const { getAllServiceReviews, postServiceReview, deleteMyReview, updateMyReview } = require('../controllers/reviews')
-const { getUserInfo,
-    updateProfile,
-    changeProfilePic,
-    resetPassword,
-    addIntoGallery,
-    fixingProfilePic } = require('../controllers/profile')
+const { getUserInfo,schedule,updateProfile,changeProfilePic,resetPassword,addIntoGallery,fixingProfilePic } = require('../controllers/profile')
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
 //User Profile............PATH: '/my-profile/:id
 router.get('/:id', extractingToken, getUserInfo);
 
+//User Profile............PATH: '/my-profile/:id
+router.get('/schedule/:id', extractingToken, schedule);
 
-//User login............PATH: '/my-profile/update-profilePic
+//User update profile............PATH: '/my-profile/update-profilePic
 router.put('/update-profilePic', extractingToken, multerConfig, changeProfilePic);
 
 
