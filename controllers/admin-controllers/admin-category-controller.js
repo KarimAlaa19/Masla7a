@@ -22,7 +22,7 @@ exports.getAllCategories = async (req, res) => {
         let queryData = {};
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })
@@ -295,7 +295,7 @@ exports.getTopCategories = async (req, res) => {
         let queryData = {};
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })

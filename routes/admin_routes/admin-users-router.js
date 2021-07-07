@@ -8,8 +8,8 @@ const { getNewUswes,
     getTopServiceProviders,
     getAllCustomers,
     getAllServiceProviders,
-    // getCustomer 
-} =
+    getCustomer,
+    getServiceProvider } =
     require('../../controllers/admin-controllers/admin-users-controller');
 
 
@@ -37,8 +37,8 @@ router.get('/total-users-roles', getAllUsersRole);
 //Path /admin/control/users/customers
 router.get('/customers', getAllCustomers);
 
-// //Path /admin/control/users/customers/:id
-// router.get('/customers/:customerId', getCustomer);
+// //Path /admin/control/users/customers/:customerId
+router.get('/customers/:customerId', getCustomer);
 
 //Path /admin/control/users/active-customers
 router.get('/active-customers', getActiveCustomers);
@@ -48,6 +48,9 @@ router.get('/active-customers', getActiveCustomers);
 
 //Path /admin/control/users/service-providers
 router.get('/service-providers', getAllServiceProviders);
+
+// //Path /admin/control/users/service-providers/:serviceProviderId
+router.get('/service-providers/:serviceProviderId', getServiceProvider);
 
 //Path /admin/control/users/top-service-providers
 router.get('/top-service-providers', getTopServiceProviders);

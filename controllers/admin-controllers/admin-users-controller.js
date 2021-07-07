@@ -5,6 +5,7 @@ const Order = require('../../models/order-model');
 const Service = require('../../models/service-model');
 const { cleanObj } = require('../../utils/filterHelpers');
 const { split } = require('lodash');
+const { aggregate } = require('../../models/user-model');
 
 
 const options = {
@@ -15,6 +16,7 @@ const options = {
         'userName'
     ]
 };
+
 
 //           Users Controllers
 
@@ -30,7 +32,7 @@ exports.getNewUswes = async (req, res) => {
         let queryData = {};
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })
@@ -112,6 +114,7 @@ exports.getNewUswes = async (req, res) => {
     }
 };
 
+
 exports.getAllUsersRole = async (req, res) => {
 
     if (req.user.role !== 'admin')
@@ -128,7 +131,7 @@ exports.getAllUsersRole = async (req, res) => {
         let countOfRoleUsers = 0;
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })
@@ -205,6 +208,7 @@ exports.getAllUsersRole = async (req, res) => {
 };
 
 
+
 //          Customers Controllers
 
 exports.getAllCustomers = async (req, res) => {
@@ -260,69 +264,75 @@ exports.getAllCustomers = async (req, res) => {
 };
 
 
-// exports.getCustomer = async (req, res) => {
-//     if (req.user.role !== 'admin')
-//         return res.status(403).json({
-//             message: 'Access Denied, Only Admins Can Access This'
-//         });
+exports.getCustomer = async (req, res) => {
+    if (req.user.role !== 'admin')
+        return res.status(403).json({
+            message: 'Access Denied, Only Admins Can Access This'
+        });
 
-//     try {
+    try {
 
-//         let queryData = {};
+        let queryData = {};
 
-//         if (req.query.date_from && req.query.date_to) {
-//             if (new Date(req.query.date_from) > new Date(req.query.date_to))
-//                 return res.status(400).json({
-//                     message: 'The Start Date is Greater Than The End Date.'
-//                 })
-//         }
+        if (req.query.date_from && req.query.date_to) {
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
+                return res.status(400).json({
+                    message: 'The Start Date is Greater Than The End Date.'
+                })
+        }
 
-//         const orderDate = {
-//             $gte: !req.query.date_from ?
-//                 undefined : new Date(req.query.date_from),
-//             $lte: !req.query.date_to ?
-//                 undefined : new Date(req.query.date_to)
-//         };
+        const orderDate = {
+            $gte: !req.query.date_from ?
+                undefined : new Date(req.query.date_from),
+            $lte: !req.query.date_to ?
+                undefined : new Date(req.query.date_to)
+        };
 
-//         cleanObj(orderDate);
-
-
-//         if (Object.keys(orderDate).length > 0) {
-//             queryData.orderDate = orderDate
-//         }
+        cleanObj(orderDate);
 
 
-
-//         const user = await Orders
-//             .aggregate([
-//                 {
-//                     $match: {
-//                         customerId: req.params.customerId
-//                     }
-//                 },
-//                 // {
-//                 //     $group: {
-//                 //         _id: {
-//                 //             'customerId': req.params.customerId,
-//                 //         },
-//                 //         totalNumberOfOrders: { $sum: 1 }
-//                 //     }
-//                 // }
-//             ]);
+        if (Object.keys(orderDate).length > 0) {
+            queryData.orderDate = orderDate
+        }
 
 
 
-//         res.status(200).json({
-//             // numberOfOrders: user.ordersList.length,
-//             user: user
-//         });
+        // const user = await Orders
+        //     .aggregate([
+        //         {
+        //             $match: {
+        //                 customerId: req.params.customerId
+        //             }
+        //         },
+        //         // {
+        //         //     $group: {
+        //         //         _id: {
+        //         //             'customerId': req.params.customerId,
+        //         //         },
+        //         //         totalNumberOfOrders: { $sum: 1 }
+        //         //     }
+        //         // }
+        //     ]);
 
-//     } catch (err) {
-//         res.status(500).json({
-//             message: err.message
-//         });
-//     }
-// };
+        const user = await User.findById(req.params.customerId);
+
+        if (!user)
+            return res.status(400).json({
+                message: 'no custoumer with such ID'
+            });
+
+
+        res.status(200).json({
+            // numberOfOrders: user.ordersList.length,
+            user: user
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            message: err.message
+        });
+    }
+};
 
 
 exports.getActiveCustomers = async (req, res) => {
@@ -339,7 +349,7 @@ exports.getActiveCustomers = async (req, res) => {
         };
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })
@@ -460,7 +470,7 @@ exports.getAllServiceProviders = async (req, res) => {
                         email: { $first: '$serviceProvider.email' },
                         profilePic: { $first: '$serviceProvider.profilePic' },
                         city: { $first: '$serviceProvider.location.city' },
-                        phone: { $first: '$serviceProvider.phone' },
+                        phone: { $first: '$serviceProvider.phone_number' },
                         averageRating: true,
                         numberOfRatings: true,
                         numberOfOrders: {
@@ -505,22 +515,181 @@ exports.getAllServiceProviders = async (req, res) => {
 };
 
 
-// exports.getServiceProvider = async (req, res) => {
-//     if (req.user.role !== 'admin')
-//         return res.status(403).json({
-//             message: 'Access Denied, Only Admins Can Access This'
-//         });
+exports.getServiceProvider = async (req, res) => {
+    if (req.user.role !== 'admin')
+        return res.status(403).json({
+            message: 'Access Denied, Only Admins Can Access This'
+        });
 
-//     try {
+    if (!mongoose.isValidObjectId(req.params.serviceProviderId))
+        return res.status(400).json({
+            message: 'The Service Provider ID is Invalid.'
+            // message: 'No Service Provider With Such ID'
+        });
+
+    try {
+
+        let queryData = {
+            serviceProviderId:
+                mongoose.Types.ObjectId(req.params.serviceProviderId),
+
+            status: !req.query.status ?
+                undefined : req.query.status
+        };
+
+        if (req.query.date_from && req.query.date_to) {
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
+                return res.status(400).json({
+                    message: 'The Start Date is Greater Than The End Date.'
+                })
+        }
+
+        const dateInterval = {
+            $gte: !req.query.date_from ?
+                undefined : new Date(req.query.date_from),
+            $lte: !req.query.date_to ?
+                undefined : new Date(req.query.date_to)
+        };
+
+        cleanObj(dateInterval);
+        cleanObj(queryData);
 
 
+        if (Object.keys(dateInterval).length > 0) {
+            queryData.orderDate = dateInterval
+        }
 
-//     } catch (err) {
-//         res.status(500).json({
-//             message: err.message
-//         });
-//     }
-// };
+
+        let serviceProvider = await Order
+            .aggregate([
+                {
+                    $match: queryData
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'customerId',
+                        foreignField: '_id',
+                        as: 'customerId'
+                    }
+                },
+                {
+                    $sort: sortOrdersBy(req.query.sort)
+                },
+                {
+                    $group: {
+                        _id: '$serviceProviderId',
+                        orders: {
+                            $push: {
+                                _id: '$_id',
+                                serviceName: '$serviceName',
+                                startsAt: '$startsAt',
+                                price: '$price',
+                                status: '$status',
+                                customer: {
+                                    _id: { $first: '$customerId._id' },
+                                    name: { $first: '$customerId.name' },
+                                    profilePic: { $first: '$customerId.profilePic' },
+                                },
+                            }
+                        },
+                        numberOfOrders: {
+                            $sum: 1
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'serviceProvider'
+                    }
+                },
+                {
+                    $set: {
+                        serviceProvider: { $first: '$serviceProvider' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'services',
+                        localField: 'serviceProvider.serviceId',
+                        foreignField: '_id',
+                        as: 'service'
+                    }
+                },
+                {
+                    $project: {
+                        _id: '$serviceProvider._id',
+                        name: '$serviceProvider.name',
+                        email: '$serviceProvider.email',
+                        age: '$serviceProvider.age',
+                        profilePic: '$serviceProvider.profilePic',
+                        phone_number: '$serviceProvider.phone_number',
+                        address: '$serviceProvider.address',
+                        serviceName: { $first: '$service.serviceName' },
+                        averageRating: { $first: '$service.averageRating' },
+                        orders: true,
+                        numberOfOrders: true
+                    }
+                }
+            ]);
+
+
+        if (serviceProvider.length === 0) {
+            serviceProvider = await User
+                .aggregate([
+                    {
+                        $match: {
+                            _id: queryData.serviceProviderId
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'services',
+                            localField: 'serviceId',
+                            foreignField: '_id',
+                            as: 'service'
+                        }
+                    },
+                    {
+                        $set: {
+                            orders: [],
+                            numberOfOrders: 0
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: true,
+                            name: true,
+                            email: true,
+                            age: true,
+                            profilePic: true,
+                            phone_number: true,
+                            address: true,
+                            serviceName: { $first: '$service.serviceName' },
+                            averageRating: { $first: '$service.averageRating' },
+                            orders: true,
+                            numberOfOrders: true
+                        }
+                    }
+                ]);
+        }
+
+
+        res.status(200).json({
+            status: 'success',
+            serviceProvider: serviceProvider[0]
+        })
+
+
+    } catch (err) {
+        res.status(500).json({
+            message: err.message
+        });
+    }
+};
 
 
 exports.getTopServiceProviders = async (req, res, next) => {
@@ -537,7 +706,7 @@ exports.getTopServiceProviders = async (req, res, next) => {
         };
 
         if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) > new Date(req.query.date_to))
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
                 })
@@ -707,6 +876,23 @@ function sortBy(sortFactor) {
                 numberOfRatings: -1,
                 averageRating: -1,
             };
+        default:
+            return { _id: 1 };
+    }
+}
+
+
+
+function sortOrdersBy(sortFactor) {
+    switch (sortFactor) {
+        case 'date_asc':
+            return { startsAt: 1 };
+        case 'date_desc':
+            return { startsAt: -1 };
+        case 'price_asc':
+            return { price: 1 };
+        case 'price_desc':
+            return { price: -1 };
         default:
             return { _id: 1 };
     }

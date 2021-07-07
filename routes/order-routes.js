@@ -1,5 +1,9 @@
 const express = require('express');
-const { getUserOrders, getOrder, createOrder, confirmOrder } = require('../controllers/order-controller');
+const { getUserOrders,
+    getOrder,
+    createOrder,
+    confirmOrder,
+    canceleOrder } = require('../controllers/order-controller');
 const { extractingToken } = require('../controllers/user-auth');
 
 
@@ -13,5 +17,7 @@ router.get('/:orderId', extractingToken, getOrder);
 router.post('/create-order', extractingToken, createOrder);
 
 router.post('/confirm-order', extractingToken, confirmOrder);
+
+router.get('/cancele-order/:orderId', extractingToken, canceleOrder);
 
 module.exports = router;

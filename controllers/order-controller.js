@@ -213,3 +213,43 @@ exports.confirmOrder = async (req, res, next) => {
     })
   }
 };
+
+
+exports.canceleOrder = async (req, res) => {
+  try {
+
+    const order = await Order
+      .findByIdAndDelete(req.params.orderId);
+
+    if (!order)
+      return res.status(400).json({
+        message: 'No Order With Such ID.'
+      });
+
+    const service = await Service
+      .findById(order.serviceId);
+
+    if (!service)
+      return res.status(400).json({
+        message: 'No Service Contains Order With Such ID.'
+      });
+
+    const index = service.ordersList.indexOf(order._id);
+
+    service.ordersList.splice(index, 1);
+
+    await service.save();
+
+    res.status(200).json({
+      status: 'Succsess',
+      order: order,
+      service: service
+    });
+
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
