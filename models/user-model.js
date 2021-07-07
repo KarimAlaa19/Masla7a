@@ -1,183 +1,182 @@
-const mongoose = require('mongoose');
-const config = require('config');
-const jwt = require('jsonwebtoken');
-const notificationService = require('../services/notification')
-const geocoder = require('../utils/geocoder');
+const mongoose = require("mongoose");
+const config = require("config");
+const jwt = require("jsonwebtoken");
+const notificationService = require("../services/notification");
+const geocoder = require("../utils/geocoder");
 
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        minlength: 3,
-        maxlength: 55,
-        trim: true,
-        required: true
+  name: {
+    type: String,
+    minlength: 3,
+    maxlength: 55,
+    trim: true,
+    required: true,
+  },
+  email: {
+    type: String,
+    minlength: 10,
+    maxlength: 255,
+    trim: true,
+    required: true,
+    unique: true,
+  },
+  userName: {
+    type: String,
+    trim: true,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    minlength: 8,
+    maxlength: 64,
+    required: true,
+  },
+  age: {
+    type: Number,
+    min: 16,
+    max: 100,
+    required: true,
+  },
+  gender: {
+    type: String,
+    trim: true,
+    required: true,
+  },
+  nationalID: {
+    type: String,
+    minlength: 14,
+    trim: true,
+    maxlength: 28,
+  },
+  profilePic: {
+    type: String,
+    required: false,
+    default: function () {
+      if (this.gender === "female")
+        return "https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg";
+      else {
+        return "https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.21.40_PM_qpjbyx.jpg";
+      }
     },
-    email: {
-        type: String,
-        minlength: 10,
-        maxlength: 255,
-        trim: true,
-        required: true,
-        unique: true
+  },
+  phone_number: {
+    type: String,
+    minlength: 11,
+    required: true,
+  },
+  address: {
+    type: String,
+    required: function () {
+      return this.role === "serviceProvider";
     },
-    userName: {
-        type: String,
-        trim: true,
-        required: true,
-        unique: true
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
     },
-    password: {
-        type: String,
-        minlength: 8,
-        maxlength: 64,
-        required: true
+    coordinates: {
+      type: [Number],
+      index: "2dsphere",
     },
-    age: {
-        type: Number,
-        min: 16,
-        max: 100,
-        required: true
+    // formattedAddres: String,
+    // zipcode: String,
+    city: String,
+    streetName: String,
+    streetNumber: String,
+    countryCode: String,
+  },
+  role: {
+    type: String,
+    enum: ["customer", "serviceProvider", "admin"],
+    default: "customer",
+    required: true,
+  },
+  serviceId: {
+    type: mongoose.Types.ObjectId,
+    ref: "Service",
+  },
+  availability: {
+    type: String,
+    enum: ["online", "offline", "busy"],
+    default: "offline",
+    required: true,
+  },
+  favouritesList: [
+    {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
     },
-    gender: {
-        type: String,
-        trim: true,
-        required: true
-    },
-    nationalID: {
-        type: String,
-        minlength: 14,
-        trim: true,
-        maxlength: 28
-    },
-    profilePic: {
-        type: String,
-        required: false,
-        default: function(){
-            if(this.gender==='female')
-            return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
-            else{
-                return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.21.40_PM_qpjbyx.jpg'
-            }
-        }
-    },
-    phone_number: {
-        type: String,
-        minlength: 11,
-        required: true
-    },
-    address: {
-        type: String,
-        required: function () {
-            return this.role === 'serviceProvider';
-        }
-    },
-    location: {
-        type: {
-            type: String,
-            enum: ['Point']
+  ],
+  pushTokens: [
+    new mongoose.Schema(
+      {
+        deviceType: {
+          type: String,
+          enum: ["android", "ios", "web"],
+          default: "android",
+          required: true,
         },
-        coordinates: {
-            type: [Number],
-            index: '2dsphere'
+        deviceToken: {
+          type: String,
+          required: true,
         },
-        // formattedAddres: String,
-        // zipcode: String,
-        city: String,
-        streetName: String,
-        streetNumber: String,
-        countryCode: String
-    },
-    role: {
-        type: String,
-        enum: ['customer',
-            'serviceProvider',
-            'admin'],
-        default: 'customer',
-        required: true
-    },
-    serviceId: {
-        type: mongoose.Types.ObjectId,
-        ref: 'Service'
-    },
-    availability: {
-        type: String,
-        enum: ['online',
-            'offline',
-            'busy'],
-        default: 'offline',
-        required: true
-    },
-    favouritesList: [{
-        type: mongoose.Types.ObjectId,
-        ref: 'User'
-    }],
-    pushTokens: [
-        new mongoose.Schema(
-            {
-                deviceType: {
-                    type: String,
-                    enum: ["android", "ios", "web"],
-                    default: 'android',
-                    required: true,
-                },
-                deviceToken: {
-                    type: String,
-                    required: true,
-                },
-            },
-            { _id: false }
-        ),
-    ],
-
+      },
+      { _id: false }
+    ),
+  ],
 });
 
 
 userSchema.methods.user_send_notification = async function (message) {
-    let changed = false;
-    let len = this.pushTokens.length;
-    while (len--) {
-        const deviceToken = this.pushTokens[len].deviceToken;
-        try {
-            await notificationService.firebaseSendNotification(deviceToken, message);
-        } catch (err) {
-            this.pushTokens.splice(len, 1);
-            changed = true;
-        }
+  let changed = false;
+  let len = this.pushTokens.length;
+  console.log('We are at user model '+len);
+  while (len--) {
+    const deviceToken = this.pushTokens[len].deviceToken;
+    try {
+      await notificationService.firebaseSendNotification(deviceToken, message);
+      console.log('We are at while');
+    
+    } catch (err) {
+    //   this.pushTokens.splice(len, 1);
+    //   changed = true;
     }
-    if (changed) await this.save();
+  }
+  if (changed) await this.save();
 };
-
 
 userSchema.methods.generateAuthToken = function () {
-    const token = jwt.sign({
-        _id: this._id,
-        email: this.email,
-        userName: this.userName,
-        role: this.role,
-        gotAddress: (this.address !== undefined)
-    }, config.get('jwtPrivateKey'));
-    return token;
+  const token = jwt.sign(
+    {
+      _id: this._id,
+      email: this.email,
+      userName: this.userName,
+      role: this.role,
+      gotAddress: this.address !== undefined,
+    },
+    config.get("jwtPrivateKey")
+  );
+  return token;
 };
 
-
-userSchema.pre('save', async function (next) {
-    if (this.address) {
-        const loc = await geocoder.geocode(this.address);
-        this.location = {
-            type: 'Point',
-            coordinates: [loc[0].longitude, loc[0].latitude],
-            // formattedAddres: loc[0].formattedAddress,
-            city: loc[0].city,
-            // zipcode: loc[0].zipcode,
-            streetName: loc[0].streetName,
-            streetNumber: loc[0].streetNumber,
-            countryCode: loc[0].countryCode
-        };
-        this.address = loc[0].formattedAddress;
-    }
-    next();
+userSchema.pre("save", async function (next) {
+  if (this.address) {
+    const loc = await geocoder.geocode(this.address);
+    this.location = {
+      type: "Point",
+      coordinates: [loc[0].longitude, loc[0].latitude],
+      // formattedAddres: loc[0].formattedAddress,
+      city: loc[0].city,
+      // zipcode: loc[0].zipcode,
+      streetName: loc[0].streetName,
+      streetNumber: loc[0].streetNumber,
+      countryCode: loc[0].countryCode,
+    };
+    this.address = loc[0].formattedAddress;
+  }
+  next();
 });
 
-
-
-module.exports = mongoose.model('User', userSchema);;
+module.exports = mongoose.model("User", userSchema);
