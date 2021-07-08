@@ -1,4 +1,4 @@
-const { Notification } = require("../../models/notification");
+const {Notification} = require('../models/notification');
 const notificationService = require('../services/notification')
 const User = require('../models/user-model');
 const _ = require("lodash");
@@ -46,5 +46,36 @@ exports.sendNotification = async (req, res)=>{
 
 exports.subscribe = async (req,res)=>{
   const user = await User.findById(req.user._id);
-  
+  const token = req.body.deviceToken
+
+  if(token){
+    const index = _.findKey(
+      user.pushTokens,
+      _.matchesProperty("deviceToken", token)
+    );
+    if(index===undefined){
+      user.pushTokens.push({
+        deviceToken: token
+      })
+    }
+  }
+  await user.save();
+  return res.status(200).json({user})
+}
+
+exports.unsubscribe = async (req, res)=>{
+  const user = await User.findById(req.user._id);
+  const token = req.body.deviceToken
+
+  if(token){
+    const index = _.findKey(
+      user.pushTokens,
+      _.matchesProperty("deviceToken", token)
+    );
+    if(index!==undefined){
+      user.pushTokens.splice(index,1);
+    }
+  }
+  await user.save();
+  return res.status(200).json({user})
 }

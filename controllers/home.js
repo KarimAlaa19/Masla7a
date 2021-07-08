@@ -47,9 +47,5 @@ exports.getAllServiceProviders = async (req, res)=>{
   })
   
   console.log(serviceProviders[0].favourite)
-
-  const obj = [{name:'reem', email:'olaa'},{name:'arwa',email:'plaaa'}]
-  obj[0].favourite = false 
-  console.log(obj)
   return res.status(200).json({serviceProviders})
 }
