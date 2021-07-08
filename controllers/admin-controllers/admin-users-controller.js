@@ -4,13 +4,11 @@ const User = require('../../models/user-model');
 const Order = require('../../models/order-model');
 const Service = require('../../models/service-model');
 const { cleanObj } = require('../../utils/filterHelpers');
-const { split } = require('lodash');
-const { aggregate } = require('../../models/user-model');
 
 
 const options = {
     minMatchCharLength: 1,
-    threshold: 0.3,
+    threshold: 0.2,
     keys: [
         'name',
         'userName'
@@ -219,41 +217,51 @@ exports.getAllCustomers = async (req, res) => {
 
     try {
 
-        let users = await User
-            .find({
-                role: 'customer'
-            })
-            .select({
-                name: true,
-                email: true,
-                profilePic: true,
-                phone_number: true,
-                city: '$location.city',
-            })
-            .sort(sortBy(req.query.sort));
+        let customers = await User
+            .aggregate([
+                {
+                    $match: {
+                        role: 'customer'
+                    }
+                },
+                {
+                    $project: {
+                        // name: { $toLower: '$name' },
+                        name: true,
+                        email: true,
+                        profilePic: true,
+                        phone_number: true,
+                        city: '$location.city',
+                        numberOfOrders: true
+                    }
+                },
+                {
+                    $sort: sortBy(req.query.sort)
+                }
+            ])
+            .collation({ locale: 'en' });
+
 
         if (req.query.search) {
             const usersList = [];
-            const fuse = new Fuse(users, options);
+            const fuse = new Fuse(customers, options);
 
-            fuse.search(req.query.search).forEach(user => {
-                usersList.push(user.item);
+            fuse.search(req.query.search).forEach(customer => {
+                usersList.push(customer.item);
             });
 
-            users = usersList;
+            customers = usersList;
         }
 
-        if (users.length === 0)
+        if (customers.length === 0)
             return res.status(200).json({
                 message: 'No Users With This Specifications'
             });
 
 
-
-
         res.status(200).json({
-            usersCount: users.length,
-            users: users
+            customersCount: customers.length,
+            customers: customers
         });
 
     } catch (err) {
@@ -270,9 +278,21 @@ exports.getCustomer = async (req, res) => {
             message: 'Access Denied, Only Admins Can Access This'
         });
 
+    if (!mongoose.isValidObjectId(req.params.serviceProviderId))
+        return res.status(400).json({
+            message: 'The Service Provider ID is Invalid.'
+            // message: 'No Service Provider With Such ID'
+        });
+
     try {
 
-        let queryData = {};
+        let queryData = {
+            customerId:
+                mongoose.Types.ObjectId(req.params.customerId),
+
+            status: !req.query.status ?
+                undefined : req.query.status
+        };
 
         if (req.query.date_from && req.query.date_to) {
             if (new Date(req.query.date_from) >= new Date(req.query.date_to))
@@ -281,51 +301,125 @@ exports.getCustomer = async (req, res) => {
                 })
         }
 
-        const orderDate = {
+        const dateInterval = {
             $gte: !req.query.date_from ?
                 undefined : new Date(req.query.date_from),
             $lte: !req.query.date_to ?
                 undefined : new Date(req.query.date_to)
         };
 
-        cleanObj(orderDate);
+        cleanObj(dateInterval);
+        cleanObj(queryData);
 
 
-        if (Object.keys(orderDate).length > 0) {
-            queryData.orderDate = orderDate
+        if (Object.keys(dateInterval).length > 0) {
+            queryData.orderDate = dateInterval
         }
 
 
+        let customer = await Order
+            .aggregate([
+                {
+                    $match: queryData
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'serviceProviderId',
+                        foreignField: '_id',
+                        as: 'serviceProviderId'
+                    }
+                },
+                {
+                    $sort: sortOrdersBy(req.query.sort)
+                },
+                {
+                    $group: {
+                        _id: '$customerId',
+                        orders: {
+                            $push: {
+                                _id: '$_id',
+                                serviceName: '$serviceName',
+                                startsAt: '$startsAt',
+                                price: '$price',
+                                status: '$status',
+                                serviceProvider: {
+                                    _id: { $first: '$serviceProviderId._id' },
+                                    name: { $first: '$serviceProviderId.name' },
+                                    profilePic: { $first: '$serviceProviderId.profilePic' },
+                                },
+                            }
+                        },
+                        numberOfOrders: {
+                            $sum: 1
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'customer'
+                    }
+                },
+                {
+                    $set: {
+                        customer: { $first: '$customer' }
+                    }
+                },
+                {
+                    $project: {
+                        _id: '$customer._id',
+                        name: '$customer.name',
+                        email: '$customer.email',
+                        age: '$customer.age',
+                        profilePic: '$customer.profilePic',
+                        phone_number: '$customer.phone_number',
+                        address: '$customer.address',
+                        orders: true,
+                        numberOfOrders: true
+                    }
+                }
+            ]);
 
-        // const user = await Orders
-        //     .aggregate([
-        //         {
-        //             $match: {
-        //                 customerId: req.params.customerId
-        //             }
-        //         },
-        //         // {
-        //         //     $group: {
-        //         //         _id: {
-        //         //             'customerId': req.params.customerId,
-        //         //         },
-        //         //         totalNumberOfOrders: { $sum: 1 }
-        //         //     }
-        //         // }
-        //     ]);
 
-        const user = await User.findById(req.params.customerId);
-
-        if (!user)
-            return res.status(400).json({
-                message: 'no custoumer with such ID'
-            });
+        if (customer.length === 0) {
+            customer = await User
+                .aggregate([
+                    {
+                        $match: {
+                            _id: queryData.customerId
+                        }
+                    },
+                    {
+                        $set: {
+                            orders: [],
+                            numberOfOrders: 0
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: true,
+                            name: true,
+                            email: true,
+                            age: true,
+                            profilePic: true,
+                            phone_number: true,
+                            address: true,
+                            orders: true,
+                            numberOfOrders: true
+                        }
+                    }
+                ]);
+        }
 
 
         res.status(200).json({
-            // numberOfOrders: user.ordersList.length,
-            user: user
+            status: 'success',
+            customer: customer[0]
         });
+
 
     } catch (err) {
         res.status(500).json({
@@ -471,6 +565,7 @@ exports.getAllServiceProviders = async (req, res) => {
                         profilePic: { $first: '$serviceProvider.profilePic' },
                         city: { $first: '$serviceProvider.location.city' },
                         phone: { $first: '$serviceProvider.phone_number' },
+                        serviceId: '$_id',
                         averageRating: true,
                         numberOfRatings: true,
                         numberOfOrders: {
@@ -484,7 +579,9 @@ exports.getAllServiceProviders = async (req, res) => {
                 {
                     $sort: sortBy(req.query.sort)
                 }
-            ]);
+            ])
+            .collation({ locale: 'en' });
+
 
         if (req.query.search) {
             const spList = [];
@@ -669,7 +766,11 @@ exports.getServiceProvider = async (req, res) => {
                             phone_number: true,
                             address: true,
                             serviceName: { $first: '$service.serviceName' },
-                            averageRating: { $first: '$service.averageRating' },
+                            averageRating: {
+                                $ifNull: [
+                                    { $first: '$service.averageRating' },
+                                    0]
+                            },
                             orders: true,
                             numberOfOrders: true
                         }
@@ -681,7 +782,7 @@ exports.getServiceProvider = async (req, res) => {
         res.status(200).json({
             status: 'success',
             serviceProvider: serviceProvider[0]
-        })
+        });
 
 
     } catch (err) {
