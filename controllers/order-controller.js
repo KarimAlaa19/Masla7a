@@ -229,10 +229,10 @@ exports.canceleOrder = async (req, res) => {
     const service = await Service
       .findById(order.serviceId);
 
-    if (!service)
-      return res.status(400).json({
-        message: 'No Service Contains Order With Such ID.'
-      });
+    // if (!service)
+    //   return res.status(400).json({
+    //     message: 'No Service Contains Order With Such ID.'
+    //   });
 
     const index = service.ordersList.indexOf(order._id);
 
@@ -243,7 +243,6 @@ exports.canceleOrder = async (req, res) => {
     res.status(200).json({
       status: 'Succsess',
       order: order,
-      service: service
     });
 
 

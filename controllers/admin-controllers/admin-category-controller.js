@@ -4,7 +4,7 @@ const fs = require("fs");
 const cloud = require("../../images/images-controller/cloudinary");
 const categoryValidator = require("../../validators/category-validator");
 const Category = require("../../models/category-model");
-// const Service = require('../../models/service-model');
+const Service = require('../../models/service-model');
 const Order = require('../../models/order-model');
 const { cleanObj } = require('../../utils/filterHelpers')
 
@@ -19,111 +19,228 @@ exports.getAllCategories = async (req, res) => {
 
     try {
 
-        let queryData = {};
 
-        if (req.query.date_from && req.query.date_to) {
-            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
-                return res.status(400).json({
-                    message: 'The Start Date is Greater Than The End Date.'
-                })
+        {
+            // let queryData = {
+            //     status: { $in: ['completed', 'pending'] }
+            // };
+            // let serviceCraetionDateQuery = {}
+
+
+            // if (req.query.date_from && req.query.date_to) {
+            //     if (new Date(req.query.date_from) >= new Date(req.query.date_to))
+            //         return res.status(400).json({
+            //             message: 'The Start Date is Greater Than The End Date.'
+            //         })
+            // }
+
+            // const orderDate = {
+            //     $gte: !req.query.date_from ?
+            //         undefined : new Date(req.query.date_from),
+            //     $lte: !req.query.date_to ?
+            //         undefined : new Date(req.query.date_to)
+            // };
+
+            // cleanObj(orderDate);
+
+
+
+            // if (Object.keys(orderDate).length > 0) {
+            //     queryData = {
+            //         'orderDate': orderDate
+            //     };
+
+            //     serviceCraetionDateQuery.serviceCreationDate = orderDate
+            // }
+
+            // console.log(serviceCraetionDateQuery)
+
+
+            // const orders = await Order
+            //     .aggregate([
+            //         {
+            //             $match: queryData
+            //         },
+            //         {
+            //             $lookup: {
+            //                 from: 'services',
+            //                 localField: 'serviceId',
+            //                 foreignField: '_id',
+            //                 as: 'serviceId'
+            //             }
+            //         },
+            //         {
+            //             $group: {
+            //                 _id: { $first: '$serviceId.categoryId' },
+            //                 numberOfOrders: {
+            //                     $sum: 1
+            //                 }
+            //             }
+            //         }
+            //     ]);
+
+
+            // console.log(orders)
+
+
+            // const categories = await Category
+            //     .aggregate([
+            //         {
+            //             $unwind: {
+            //                 path: '$servicesList',
+            //                 preserveNullAndEmptyArrays: true
+            //             }
+            //         },
+            //         {
+            //             $lookup: {
+            //                 from: 'services',
+            //                 localField: 'servicesList',
+            //                 foreignField: '_id',
+            //                 as: 'servicesList'
+            //             }
+            //         },
+            //         {
+            //             $set: {
+            //                 serviceCreationDate: {
+            //                     $convert: {
+            //                         input: { $first: '$servicesList._id' },
+            //                         to: 'date'
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         {
+            //             $match: serviceCraetionDateQuery
+            //         },
+            //         {
+            //             $group: {
+            //                 _id: {
+            //                     _id: '$_id',
+            //                     name: '$name',
+            //                     coverPhoto: '$coverPhoto',
+            //                     icon: '$icon'
+            //                 },
+            //                 numberOfServices: {
+            //                     $sum: {
+            //                         $cond: [
+            //                             { $ne: ['$serviceCreationDate', undefined] },
+            //                             1,
+            //                             0
+            //                         ]
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         {
+            //             $set: {
+            //                 orders: {
+            //                     $filter: {
+            //                         input: orders,
+            //                         as: 'order',
+            //                         cond: { $eq: ['$$order._id', '$_id._id'] }
+            //                     }
+            //                 }
+            //             }
+            //         },
+            //         {
+            //             $project: {
+            //                 _id: '$_id._id',
+            //                 name: '$_id.name',
+            //                 coverPhoto: '$_id.coverPhoto',
+            //                 icon: '$_id.icon',
+            //                 numberOfServices: true,
+            //                 numberOfOrders: {
+            //                     $ifNull: [
+            //                         {
+            //                             $first: '$orders.numberOfOrders'
+            //                         },
+            //                         0
+            //                     ]
+            //                 }
+            //             }
+            //         },
+            //         {
+            //             $sort: sortBy(req.query.sort)
+            //         }
+            //     ]);
         }
 
-        const orderDate = {
-            $gte: !req.query.date_from ?
-                undefined : new Date(req.query.date_from),
-            $lte: !req.query.date_to ?
-                undefined : new Date(req.query.date_to)
-        };
-
-        cleanObj(orderDate);
-
-
-        if (Object.keys(orderDate).length > 0) {
-            queryData = {
-                'orderDate': orderDate
-            }
-        }
-
-
-        const categories = await Order
+        const categories = await Category
             .aggregate([
-                {
-                    $match: queryData
-                },
+
                 {
                     $lookup: {
                         from: 'services',
-                        localField: 'serviceId',
+                        localField: 'servicesList',
                         foreignField: '_id',
-                        as: 'service'
+                        as: 'servicesList'
                     }
                 },
                 {
-                    $lookup: {
-                        from: 'categories',
-                        localField: 'service.categoryId',
-                        foreignField: '_id',
-                        as: 'category'
+                    $unwind: {
+                        path: '$servicesList',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $set: {
+                        serviceCreationDate: {
+                            $convert: {
+                                input: '$servicesList._id',
+                                to: 'date'
+                            }
+                        }
                     }
                 },
                 {
                     $group: {
                         _id: {
-                            _id: '$category._id',
-                            name: '$category.name',
-                            coverPhoto: '$category.coverPhoto',
-                            icon: '$category.icon'
+                            _id: '$_id',
+                            name: '$name',
+                            coverPhoto: '$coverPhoto',
+                            icon: '$icon'
+                        },
+                        numberOfServices: {
+                            $sum: {
+                                $cond: [
+                                    { $ne: ['$serviceCreationDate', undefined] },
+                                    1,
+                                    0
+                                ]
+                            }
                         },
                         numberOfOrders: {
-                            $sum: 1
+                            $sum: {
+                                $size: {
+                                    $ifNull: [
+                                        '$servicesList.ordersList',
+                                        []
+                                    ]
+                                }
+                            }
                         }
                     }
                 },
                 {
                     $project: {
-                        _id: { $first: '$_id._id' },
-                        name: { $first: '$_id.name' },
-                        coverPhoto: { $first: '$_id.coverPhoto' },
-                        icon: { $first: '$_id.icon' },
+                        _id: '$_id._id',
+                        name: '$_id.name',
+                        coverPhoto: '$_id.coverPhoto',
+                        icon: '$_id.icon',
+                        numberOfServices: true,
                         numberOfOrders: true
                     }
                 },
                 {
-                    $sort: {
-                        numberOfOrders: -1
-                    }
+                    $sort: sortBy(req.query.sort)
                 }
             ]);
-
 
         if (categories.length === 0)
             return res.status(200).json({
                 message: 'No Categories Have Orders At This Time'
             });
 
-
-        const idArr = [];
-
-        categories.forEach(category => {
-            idArr.push(category._id);
-        });
-
-        const categoryList = await Category
-            .find({
-                _id: { $nin: idArr }
-            });
-
-        if (categoryList.length > 0) {
-            categoryList.forEach(category => {
-                categories.push({
-                    _id: category._id,
-                    name: category.name,
-                    coverPhoto: category.coverPhoto,
-                    icon: category.icon,
-                    numberOfOrders: 0
-                });
-            });
-        }
 
         res.status(200).json({
             count: categories.length,
@@ -317,8 +434,7 @@ exports.getTopCategories = async (req, res) => {
             }
         }
 
-
-        const categories = await Order
+        const orders = await Order
             .aggregate([
                 {
                     $match: queryData
@@ -328,37 +444,48 @@ exports.getTopCategories = async (req, res) => {
                         from: 'services',
                         localField: 'serviceId',
                         foreignField: '_id',
-                        as: 'service'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'categories',
-                        localField: 'service.categoryId',
-                        foreignField: '_id',
-                        as: 'category'
+                        as: 'serviceId'
                     }
                 },
                 {
                     $group: {
-                        _id: {
-                            _id: '$category._id',
-                            name: '$category.name',
-                            coverPhoto: '$category.coverPhoto',
-                            icon: '$category.icon'
-                        },
+                        _id: { $first: '$serviceId.categoryId' },
                         numberOfOrders: {
                             $sum: 1
+                        }
+                    }
+                }
+            ]);
+
+
+        const categories = await Category
+            .aggregate([
+                {
+                    $set: {
+                        orders: {
+                            $filter: {
+                                input: orders,
+                                as: 'order',
+                                cond: { $eq: ['$$order._id', '$_id'] }
+                            }
                         }
                     }
                 },
                 {
                     $project: {
-                        _id: { $first: '$_id._id' },
-                        name: { $first: '$_id.name' },
-                        coverPhoto: { $first: '$_id.coverPhoto' },
-                        icon: { $first: '$_id.icon' },
-                        numberOfOrders: true
+                        _id: '$_id',
+                        name: '$name',
+                        coverPhoto: '$coverPhoto',
+                        icon: '$icon',
+                        numberOfServices: true,
+                        numberOfOrders: {
+                            $ifNull: [
+                                {
+                                    $first: '$orders.numberOfOrders'
+                                },
+                                0
+                            ]
+                        }
                     }
                 },
                 {
@@ -375,28 +502,6 @@ exports.getTopCategories = async (req, res) => {
             });
 
 
-        const idArr = [];
-
-        categories.forEach(category => {
-            idArr.push(category._id);
-        });
-
-        const categoryList = await Category
-            .find({
-                _id: { $nin: idArr }
-            });
-
-        if (categoryList.length > 0) {
-            categoryList.forEach(category => {
-                categories.push({
-                    _id: category._id,
-                    name: category.name,
-                    coverPhoto: category.coverPhoto,
-                    icon: category.icon,
-                    numberOfOrders: 0
-                });
-            });
-        }
 
         res.status(200).json({
             count: categories.length,
@@ -409,3 +514,43 @@ exports.getTopCategories = async (req, res) => {
         });
     }
 };
+
+
+
+function sortBy(sortFactor) {
+    switch (sortFactor) {
+        case 'name_asc':
+            return { name: 1 };
+        case 'name_desc':
+            return { name: -1 };
+        case 'orders_asc':
+            return { numberOfOrders: 1 };
+        case 'orders_desc':
+            return { numberOfOrders: -1 };
+        case 'services_asc':
+            return { numberOfServices: 1 };
+        case 'services_desc':
+            return { numberOfServices: -1 };
+        default:
+            return { _id: 1 };
+    }
+}
+
+{
+    // to delete services with no servie providers
+    // async function deleteUnUsedService(service_id) {
+    //     const service = await Service.findByIdAndDelete(service_id)
+
+    //     const category = await Category.findById(service.categoryId).populate();
+    //     console.log(category.servicesList.length)
+    //     const index = category.servicesList.indexOf(service._id);
+    //     if (index > -1) {
+    //         category.servicesList.splice(index, 1);
+    //     }
+    //     console.log(category.servicesList.length)
+    //     await category.save();
+
+    // };
+
+    // deleteUnUsedService('60e5e3a7c3beae32f8c4ea22');
+}

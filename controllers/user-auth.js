@@ -16,7 +16,7 @@ const addUser = async (req, res) => {
   const userDate = new Date(req.body.birthDate);
   const age = today.getFullYear() - userDate.getFullYear();
 
-  const user = await new User({
+  const user = new User({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,

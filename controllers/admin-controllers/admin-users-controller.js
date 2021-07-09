@@ -217,6 +217,18 @@ exports.getAllCustomers = async (req, res) => {
 
     try {
 
+        const orders = await Order
+            .aggregate([
+                {
+                    $group: {
+                        _id: '$customerId',
+                        numberOfOrders: {
+                            $sum: 1
+                        }
+                    }
+                }
+            ]);
+
         let customers = await User
             .aggregate([
                 {
@@ -225,14 +237,31 @@ exports.getAllCustomers = async (req, res) => {
                     }
                 },
                 {
+                    $set: {
+                        orders: {
+                            $filter: {
+                                input: orders,
+                                as: 'order',
+                                cond: { $eq: ['$$order._id', '$_id'] }
+                            }
+                        }
+                    }
+                },
+                {
                     $project: {
-                        // name: { $toLower: '$name' },
                         name: true,
                         email: true,
                         profilePic: true,
                         phone_number: true,
                         city: '$location.city',
-                        numberOfOrders: true
+                        numberOfOrders: {
+                            $ifNull: [
+                                {
+                                    $first: '$orders.numberOfOrders'
+                                },
+                                0
+                            ]
+                        }
                     }
                 },
                 {
@@ -528,6 +557,7 @@ exports.getActiveCustomers = async (req, res) => {
 
 
 //          Service Providers Controllers
+
 exports.getAllServiceProviders = async (req, res) => {
     if (req.user.role !== 'admin')
         return res.status(403).json({
@@ -957,6 +987,7 @@ exports.getTopServiceProviders = async (req, res, next) => {
 
 
 
+
 function sortBy(sortFactor) {
     switch (sortFactor) {
         case 'name_asc':
@@ -981,7 +1012,6 @@ function sortBy(sortFactor) {
             return { _id: 1 };
     }
 }
-
 
 
 function sortOrdersBy(sortFactor) {

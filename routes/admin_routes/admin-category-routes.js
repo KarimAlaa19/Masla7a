@@ -1,7 +1,7 @@
 
 const express = require('express');
-const { getAllCategories } = require('../../controllers/category-controller');
-const { getAllServicesInCategory,
+const { getAllCategories,
+    getAllServicesInCategory,
     addCategory,
     editCategory,
     deleteCategory,

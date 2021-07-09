@@ -42,10 +42,7 @@ exports.getUserInfo = async (req, res, next) => {
     if(currentDate>= appointment.startsAt && currentDate <=appointment.endsAt){
       user.availability = 'busy'
     }
-  console.log(appointment.startsAt)
-
   })
-
  }
 
   res.status(200).json({ serviceProviderInfo: user, service: service , reviewsDetails: reviews});
@@ -138,7 +135,6 @@ exports.addIntoGallery = async (req, res, next) => {
 };
 //#endregion
 
-//#region Schedule
 exports.schedule = async (req, res)=>{
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
@@ -169,10 +165,6 @@ exports.schedule = async (req, res)=>{
  return res.status(200).json({serviceProvider,schedule}); 
 }
 
-//#endregion
-
-//#region Edit Schedule Notes
 exports.editScheduleNotes = async (req, res)=>{
 
 }
-//#endregion
