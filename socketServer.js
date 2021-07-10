@@ -1,9 +1,9 @@
+const User = require('./models/user-model');
 const socketIO = require("socket.io");
 const socketIOJwt = require("socketio-jwt");
 const { Conversation } = require("./models/conversation");
-const Notification = require('./models/notification');
+const {Notification} = require('./models/notification');
 const Message = require("./models/messages").Message;
-const { User } = require("./models/user-model");
 const config = require("config");
 
 const socketServer = (server) => {
@@ -41,7 +41,7 @@ const socketServer = (server) => {
           });
           await conversation.save();
         }
-        console.log(conversation);
+        //console.log(conversation);
 
         //saving messages to the Database
               
@@ -53,28 +53,30 @@ const socketServer = (server) => {
           });
           await sentMessage.save();
         
-          console.log(sentMessage._id)
+          //console.log(sentMessage._id)
         conversation.lastMessage = await sentMessage._id;
         await conversation.save();
-        console.log("CHECK POINT WOOHOOO..");
+        //console.log("CHECK POINT WOOHOOO..");
         nameSpace.to(`user ${data.to}`).emit("new message", {
           conversation,
           message: data,
         });
 
-          // // Send Notification in-app
-          // const receiver = await User.findById(data.to)
-          // const notification = await new Notification({
-          //   title: "New Message",
-          //   body: data.content,
-          //   senderUser: senderID,
-          //   targetUsers:  data.to,
-          //   subjectType: "Message",
-          //   subject: sentMessage._id,
-          // }).save();
+          // Send Notification in-app
+          const receiver = await User.findById(data.to)
+          console.log("Receiver object"+receiver)
+          console.log("SenderID "+senderID)
+          const notification = await new Notification({
+            title: "New Message",
+            body: data.content,
+            senderUser: senderID,
+            targetUsers:  data.to,
+            subjectType: "Message",
+            subject: sentMessage._id,
+          }).save();
 
-          // // push notifications
-          // await receiver.sendNotification(notification.toFirebaseNotification());
+          // push notifications
+          await receiver.user_send_notification(notification.toFirebaseNotification());
         
       });
     });
