@@ -17,12 +17,7 @@ exports.postRequest = async (req, res) => {
   if (!service)
     return res.status(400).json({ message: "There is no service provider with such ID" });
 
-<<<<<<< HEAD
   const request = await new Request({
-=======
-  const customer = await User.findById(req.user._id);
-  const request = new Request.create({
->>>>>>> 1e8602d8bde0ba53ea80ba68897fb1354cfd388a
       customerId: customer._id,
       serviceProviderId: serviceProviderID,
       serviceName: service.serviceName,
