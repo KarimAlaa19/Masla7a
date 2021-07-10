@@ -10,6 +10,7 @@ const homeRoute = require('./routes/home')
 const userProfile = require('./routes/profile');
 const orderRouter = require('./routes/order-routes');
 const favouritesRouter = require('./routes/favourites-routes');
+const notificationRouter = require('./routes/notification');
 const requestRouter = require('./routes/request');
 const { handlingError, serverErrorHandler, _404 } = require('./controllers/error')
 
@@ -41,6 +42,7 @@ app.use('/my-profile', userProfile);
 app.use('/chating', conversationRouter);
 app.use('/categories', categoryRouter);
 app.use('/favourites', favouritesRouter);
+app.use('/notifications',notificationRouter)
 app.use('/request', requestRouter);
 app.use('/', _404);
 // app.use(handlingError, serverErrorHandler)

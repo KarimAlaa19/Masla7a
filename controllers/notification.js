@@ -1,4 +1,4 @@
-const { Notification } = require("../../models/notification");
+const {Notification} = require('../models/notification')
 const notificationService = require('../services/notification')
 const User = require('../models/user-model');
 const _ = require("lodash");
@@ -9,8 +9,8 @@ exports.fetchAllNotifications = async (req, res) => {
   let notifications = await Notification.find({
     targetUsers: { $in: [user._id] },
   })
-    .sort("-createdAt")
-    .populate("subject");
+  .populate('senderUser','name profilePic _id')
+  .sort("-createdAt")
 
   for (let i = 0; i < notifications.length; i++) {
     let notification = _.cloneDeep(notifications[i]); 
@@ -18,7 +18,7 @@ exports.fetchAllNotifications = async (req, res) => {
     notification.seen = true;
     await notification.save();
   }
-  return res.statu(200).json({notifications: notifications});
+  return res.status(200).json({notifications: notifications});
 };
 
 exports.numberOfUnseen = async (req, res)=>{

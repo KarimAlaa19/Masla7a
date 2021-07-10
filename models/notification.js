@@ -53,22 +53,10 @@ notificationSchema.methods.toFirebaseNotification = function () {
     };
   };
 
-  notificationSchema.set("toJSON", {
-    virtuals: true,
-    transform: function (document) {
-      return {
-        title: document.title,
-        body: document.body,
-        user: document.user,
-        icon: document.icon,
-        seen: document.seen,
-      };
-    },
-  });
 
 notificationSchema.plugin(pagination);
 
 const Notification = mongoose.model("Notification", notificationSchema);
-module.exports.Notification = Notification;
+exports.Notification = Notification;
     
 

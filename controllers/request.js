@@ -12,12 +12,12 @@ exports.postRequest = async (req, res) => {
   const serviceProviderID = mongoose.Types.ObjectId(req.params.id);
   const serviceProvider = await User.findById(serviceProviderID)
   const service = await Service.findOne({serviceProviderId: serviceProviderID,});
-  
+  const customer = await User.findOne({_id: req.user._id});
+  console.log(req.user._id)
+  console.log(serviceProvider)
   if (!service)
     return res.status(400).json({ message: "There is no service provider with such ID" });
 
-  const customer = await User.findById(req.user._id);
-  
   const request = await new Request({
       customerId: customer._id,
       serviceProviderId: serviceProviderID,
