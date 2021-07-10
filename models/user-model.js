@@ -52,10 +52,10 @@ const userSchema = new mongoose.Schema({
     profilePic: {
         type: String,
         required: false,
-        default: function(){
-            if(this.gender==='female')
-            return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
-            else{
+        default: function () {
+            if (this.gender === 'female')
+                return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.22.24_PM_feprza.jpg'
+            else {
                 return 'https://res.cloudinary.com/maslaha-app/image/upload/v1625175864/WhatsApp_Image_2021-07-01_at_11.21.40_PM_qpjbyx.jpg'
             }
         }
@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
     address: {
         type: String,
         required: function () {
-            return this.role === 'serviceProvider';
+            return this.role !== 'admin';
         }
     },
     location: {
@@ -178,7 +178,6 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
-module.exports = mongoose.model('User', userSchema);
 
-//const User = mongoose.model('User', userSchema);
-// exports.User = User
+
+module.exports = mongoose.model('User', userSchema);;

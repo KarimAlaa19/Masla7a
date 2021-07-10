@@ -579,7 +579,7 @@ exports.getAllServiceProviders = async (req, res) => {
                 {
                     $set: {
                         averageRating: {
-                            $ifNull: ['$averageRating', 1],
+                            $ifNull: ['$averageRating', 0],
                         },
                         numberOfRatings: {
                             $ifNull: ['$numberOfRatings', 0],
@@ -756,7 +756,11 @@ exports.getServiceProvider = async (req, res) => {
                         phone_number: '$serviceProvider.phone_number',
                         address: '$serviceProvider.address',
                         serviceName: { $first: '$service.serviceName' },
-                        averageRating: { $first: '$service.averageRating' },
+                        averageRating: {
+                            $ifNull: [
+                                { $first: '$service.averageRating' },
+                                0]
+                        },
                         orders: true,
                         numberOfOrders: true
                     }
@@ -807,6 +811,8 @@ exports.getServiceProvider = async (req, res) => {
                     }
                 ]);
         }
+
+        console.log(serviceProvider.averageRating)
 
 
         res.status(200).json({
@@ -895,9 +901,18 @@ exports.getTopServiceProviders = async (req, res, next) => {
                         profilePic: { $first: '$serviceProvider.profilePic' },
 
                         serviceName: { $first: '$service.serviceName' },
-                        numberOfRatings: { $first: '$service.numberOfRatings' },
-                        averageRating: { $first: '$service.averageRating' },
-
+                        averageRating: {
+                            $ifNull: [
+                                { $first: '$service.numberOfRatings' },
+                                0
+                            ]
+                        },
+                        numberOfRatings: {
+                            $ifNull: [
+                                { $first: '$service.averageRating' },
+                                0
+                            ]
+                        },
                         numberOfOrders: true
                     }
                 },
@@ -936,13 +951,23 @@ exports.getTopServiceProviders = async (req, res, next) => {
                     },
                     {
                         $project: {
-                            _id: '$serviceProvider._id',
-                            name: '$serviceProvider.name',
-                            profilePic: '$serviceProvider.profilePic',
+                            _id: { $first: '$serviceProvider._id' },
+                            name: { $first: '$serviceProvider.name' },
+                            profilePic: { $first: '$serviceProvider.profilePic' },
 
                             serviceName: true,
-                            averageRating: true,
-                            numberOfRatings: true,
+                            averageRating: {
+                                $ifNull: [
+                                    '$averageRating',
+                                    0
+                                ]
+                            },
+                            numberOfRatings: {
+                                $ifNull: [
+                                    '$numberOfRatings',
+                                    0
+                                ]
+                            },
                             numberOfOrders: { $size: { $ifNull: ['$ordersList', []] } },
 
                         }
