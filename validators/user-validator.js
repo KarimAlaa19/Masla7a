@@ -23,7 +23,7 @@ exports.validateSignUp = (user) => {
         gender: Joi.string().required(),
         userName: Joi.string().required(),
         role: Joi.string().required(),
-        address: Joi.string(),
+        address: Joi.string().required(),
         deviceType: Joi.string(),
         deviceToken : Joi.string().required()
     });
