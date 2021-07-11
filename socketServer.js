@@ -1,9 +1,9 @@
 const socketIO = require("socket.io");
 const socketIOJwt = require("socketio-jwt");
 const { Conversation } = require("./models/conversation");
-const Notification = require('./models/notification');
+const {Notification} = require('./models/notification');
 const Message = require("./models/messages").Message;
-const { User } = require("./models/user-model");
+const User = require("./models/user-model");
 const config = require("config");
 
 const socketServer = (server) => {
@@ -27,9 +27,11 @@ const socketServer = (server) => {
 
       socket.on("private", async (data) => {
         console.log("We are at private event");
+        console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
 
+        console.log('hello')
         let conversation = await Conversation.findOne({
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
         });
@@ -61,20 +63,20 @@ const socketServer = (server) => {
           conversation,
           message: data,
         });
-
+        
           // // Send Notification in-app
-          // const receiver = await User.findById(data.to)
-          // const notification = await new Notification({
-          //   title: "New Message",
-          //   body: data.content,
-          //   senderUser: senderID,
-          //   targetUsers:  data.to,
-          //   subjectType: "Message",
-          //   subject: sentMessage._id,
-          // }).save();
+          const receiver = await User.findById(data.to)
+          const notification = await new Notification({
+            title: "New Message",
+            body: data.content,
+            senderUser: senderID,
+            targetUsers:  data.to,
+            subjectType: "Message",
+            subject: sentMessage._id,
+          }).save();
 
-          // // push notifications
-          // await receiver.sendNotification(notification.toFirebaseNotification());
+          // push notifications
+          await receiver.user_send_notification(notification.toFirebaseNotification());
         
       });
     });
