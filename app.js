@@ -12,6 +12,7 @@ const orderRouter = require('./routes/order-routes');
 const favouritesRouter = require('./routes/favourites-routes');
 const notificationRouter = require('./routes/notification');
 const requestRouter = require('./routes/request');
+const offerRouter = require('./routes/offer');
 const { handlingError, serverErrorHandler, _404 } = require('./controllers/error')
 
 
@@ -44,6 +45,7 @@ app.use('/categories', categoryRouter);
 app.use('/favourites', favouritesRouter);
 app.use('/notifications',notificationRouter)
 app.use('/request', requestRouter);
+app.use('/offer', offerRouter);
 app.use('/', _404);
 // app.use(handlingError, serverErrorHandler)
 // app.use(serverErrorHandler)
