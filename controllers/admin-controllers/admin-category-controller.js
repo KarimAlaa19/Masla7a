@@ -260,21 +260,29 @@ exports.addCategory = async (req, res) => {
             message: "you are not allowed to make changes here",
         });
 
+
+        
     const result = categoryValidator.validateCreateCategory(req.body).error;
     if (result)
         return res.status(400).json({ message: result.details[0].message });
 
     try {
-        const category = await Category.create(req.body);
+        const category = await new Category({
+            name: req.body.name,
+            icon:'',
+            coverPhoto: ''
+        });
 
 
         if (req.files) {
             for (var i = 0; i < req.files.length; i++) {
+                console.log(req.files[i].fieldname)
                 if (req.files[i].fieldname === "icon") {
                     const result = await cloud.uploads(req.files[i].path);
                     category.icon = result.url;
                     fs.unlinkSync(req.files[i].path);
-                } else if (req.files[i].fieldname === "coverPhoto") {
+                } 
+                else if (req.files[i].fieldname === "coverPhoto") {
                     const result = await cloud.uploads(req.files[i].path);
                     category.coverPhoto = result.url;
                     fs.unlinkSync(req.files[i].path);
