@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const _ = require("lodash");
+const Fuse = require('fuse.js');
 const fs = require("fs");
 const cloud = require("../../images/images-controller/cloudinary");
 const categoryValidator = require("../../validators/category-validator");
@@ -8,6 +9,15 @@ const Service = require('../../models/service-model');
 const Order = require('../../models/order-model');
 const { cleanObj } = require('../../utils/filterHelpers')
 
+
+
+const options = {
+    minMatchCharLength: 1,
+    threshold: 0.2,
+    keys: [
+        'serviceName'
+    ]
+};
 
 
 exports.getAllCategories = async (req, res) => {
@@ -254,6 +264,7 @@ exports.getAllCategories = async (req, res) => {
     }
 };
 
+
 exports.addCategory = async (req, res) => {
     if (req.user.role !== "admin")
         return res.status(403).json({
@@ -351,13 +362,46 @@ exports.deleteCategory = async (req, res) => {
         });
 
     try {
-        const category = await Category.findByIdAndDelete(req.params.categoryId);
+        const othersCategory = await Category
+            .findOne({ name: /.*other.*/i });
 
-        if (!category)
+        if (!othersCategory)
             return res.status(400).json({
+                status: 'Failed',
+                message: "The Category 'Others' not Found",
+            });
+
+
+        const deletedCategory = await Category
+            .findByIdAndDelete(req.params.categoryId);
+
+        if (!deletedCategory)
+            return res.status(400).json({
+                status: 'Failed',
                 message: "The Category You Chose Doesn't Exist",
             });
+
+        deletedCategory.servicesList.forEach(servcieId => {
+            const service = Service.findByIdAndUpdate(
+                servcieId,
+                { $set: { categoryId: othersCategory._id } }
+            )
+                .then(result => {
+                    return result;
+                })
+                .catch(err => {
+                    return res.status(500).json({
+                        message: err.message
+                    });
+                });
+
+            othersCategory.servicesList.push(servcieId);
+        });
+
+        await othersCategory.save();
+
         res.status(201).json({
+            status: 'Succeeded',
             message: "Category Deleted Successfully",
         });
     } catch (err) {
@@ -371,27 +415,135 @@ exports.getAllServicesInCategory = async (req, res) => {
             message: "you are not allowed to make changes here",
         });
 
+    if (!mongoose.isValidObjectId(req.params.categoryId))
+        return res.status(400).json({
+            message: 'The Category ID Is Invalid'
+        });
+
     try {
+
+        let queryData = {};
+
+        if (req.query.date_from && req.query.date_to) {
+            if (new Date(req.query.date_from) >= new Date(req.query.date_to))
+                return res.status(400).json({
+                    message: 'The Start Date is Greater Than The End Date.'
+                })
+        }
+
+        const dateInterval = {
+            $gte: !req.query.date_from ?
+                undefined : new Date(req.query.date_from),
+            $lte: !req.query.date_to ?
+                undefined : new Date(req.query.date_to)
+        };
+
+        cleanObj(dateInterval);
+
+
+        if (Object.keys(dateInterval).length > 0) {
+            queryData.orderDate = dateInterval
+        }
+
+
         const category = await Category
-            .findById(req.params.categoryId)
-            .populate(
-                "servicesList",
-                "serviceName"
-            );
+            .findById(req.params.categoryId);
+
 
         if (!category)
             return res.status(200).json({
                 message: "The Category You Are Trying To Access Doesn't Exist",
             });
 
-        if (category.servicesList.length === 0)
+
+        const orders = await Order
+            .aggregate([
+                {
+                    $match: queryData
+                },
+                {
+                    $group: {
+                        _id: '$serviceProviderId',
+                        numberOfOrders: {
+                            $sum: 1
+                        }
+                    }
+                }
+            ]);
+
+
+        let services = await Service
+            .aggregate([
+                {
+                    $match: {
+                        categoryId: mongoose.Types.ObjectId(req.params.categoryId)
+                    }
+                },
+                {
+                    $set: {
+                        orders: {
+                            $filter: {
+                                input: orders,
+                                as: 'order',
+                                cond: { $eq: ['$$order._id', '$serviceProviderId'] }
+                            }
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'serviceProviderId',
+                        foreignField: '_id',
+                        as: 'serviceProviderId'
+                    }
+                },
+                {
+                    $project: {
+                        serviceName: true,
+                        averageRating: {
+                            $ifNull: ['$averageRating', 0]
+                        },
+                        numberOfOrders: {
+                            $ifNull: [
+                                { $first: '$orders.numberOfOrders' },
+                                0
+                            ]
+                        },
+                        serviceProfit: '$servicePrice',
+                        serviceProvider: {
+                            _id: { $first: '$serviceProviderId._id' },
+                            name: { $first: '$serviceProviderId.name' },
+                            profilePic: { $first: '$serviceProviderId.profilePic' }
+                        }
+                    }
+                },
+                {
+                    $sort: sortBy(req.query.sort)
+                }
+            ]);
+
+
+        if (req.query.search) {
+            let servicesList = [];
+            const fuse = new Fuse(services, options);
+
+            fuse.search(req.query.search).forEach(service => {
+                servicesList.push(service.item)
+            });
+
+            services = servicesList;
+        }
+
+
+        if (services.length === 0)
             return res.status(200).json({
                 message: `The ${category.name} Doesn't Contain Any Service`,
             });
 
         res.status(200).json({
-            servicesCount: category.servicesList.length,
-            category: category,
+            servicesCount: services.length,
+            services: services,
         });
     } catch (err) {
         res.status(500).json({
@@ -527,6 +679,10 @@ function sortBy(sortFactor) {
             return { numberOfOrders: 1 };
         case 'orders_desc':
             return { numberOfOrders: -1 };
+        case 'rating_asc':
+            return { averageRating: 1 };
+        case 'rating_desc':
+            return { averageRating: -1 };
         case 'services_asc':
             return { numberOfServices: 1 };
         case 'services_desc':

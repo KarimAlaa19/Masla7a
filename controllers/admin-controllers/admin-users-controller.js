@@ -307,10 +307,9 @@ exports.getCustomer = async (req, res) => {
             message: 'Access Denied, Only Admins Can Access This'
         });
 
-    if (!mongoose.isValidObjectId(req.params.serviceProviderId))
+    if (!mongoose.isValidObjectId(req.params.customerId))
         return res.status(400).json({
-            message: 'The Service Provider ID is Invalid.'
-            // message: 'No Service Provider With Such ID'
+            message: 'The Customer ID is Invalid.'
         });
 
     try {
