@@ -26,9 +26,15 @@ const offerSchema = new Schema(
       type:Date,
       required:true
     },
-    
+    status:{
+      type:String,
+      enum: ['Valid','Expired'],
+      required: true,
+      default: 'Valid'
+    }
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Offer", offerSchema);
+const Offer = mongoose.model("Offer", offerSchema);
+exports.Offer = Offer
