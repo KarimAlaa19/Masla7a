@@ -272,7 +272,7 @@ exports.addCategory = async (req, res) => {
         });
 
 
-        
+
     const result = categoryValidator.validateCreateCategory(req.body).error;
     if (result)
         return res.status(400).json({ message: result.details[0].message });
@@ -280,7 +280,7 @@ exports.addCategory = async (req, res) => {
     try {
         const category = await new Category({
             name: req.body.name,
-            icon:'',
+            icon: '',
             coverPhoto: ''
         });
 
@@ -292,7 +292,7 @@ exports.addCategory = async (req, res) => {
                     const result = await cloud.uploads(req.files[i].path);
                     category.icon = result.url;
                     fs.unlinkSync(req.files[i].path);
-                } 
+                }
                 else if (req.files[i].fieldname === "coverPhoto") {
                     const result = await cloud.uploads(req.files[i].path);
                     category.coverPhoto = result.url;
@@ -317,9 +317,17 @@ exports.editCategory = async (req, res) => {
             message: "you are not allowed to make changes here",
         });
 
+
+    if (!mongoose.isValidObjectId(req.params.categoryId))
+        return res.status(400).json({
+            message: 'The Category ID Is Invalid'
+        });
+
+
     const result = categoryValidator.validateEditCategory(req.body).error;
     if (result)
         return res.status(400).json({ message: result.details[0].message });
+
 
     try {
         const category = await Category
@@ -367,6 +375,11 @@ exports.deleteCategory = async (req, res) => {
     if (req.user.role !== "admin")
         return res.status(403).json({
             message: "you are not allowed to make changes here",
+        });
+
+    if (!mongoose.isValidObjectId(req.params.categoryId))
+        return res.status(400).json({
+            message: 'The Category ID Is Invalid'
         });
 
     try {

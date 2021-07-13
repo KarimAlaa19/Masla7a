@@ -809,6 +809,12 @@ exports.getServiceProvider = async (req, res) => {
                         }
                     }
                 ]);
+
+            if (serviceProvider.length === 0)
+                return res.status(400).json({
+                    status: 'Failed',
+                    message: 'Service Provider Not Found.'
+                })
         }
 
         console.log(serviceProvider.averageRating)
