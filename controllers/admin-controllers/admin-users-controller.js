@@ -242,6 +242,7 @@ exports.getAllCustomers = async (req, res) => {
                     }
                 }
             ]);
+            
 
         let customers = await User
             .aggregate([
@@ -373,14 +374,14 @@ exports.getCustomer = async (req, res) => {
                         as: 'serviceProviderId'
                     }
                 },
-                // {
-                //     $lookup: {
-                //         from: 'services',
-                //         localField: 'serviceId',
-                //         foreignField: '_id',
-                //         as: 'serviceId'
-                //     }
-                // },
+                {
+                    $lookup: {
+                        from: 'services',
+                        localField: 'serviceId',
+                        foreignField: '_id',
+                        as: 'serviceId'
+                    }
+                },
                 {
                     $sort: sortOrdersBy(req.query.sort)
                 },
@@ -397,9 +398,10 @@ exports.getCustomer = async (req, res) => {
                                 serviceProvider: {
                                     _id: { $first: '$serviceProviderId._id' },
                                     name: { $first: '$serviceProviderId.name' },
+                                    userName: { $first: '$serviceProviderId.userName' },
                                     profilePic: { $first: '$serviceProviderId.profilePic' },
                                 },
-                                // serviceName: { $first: '$serviceId.serviceName' }
+                                serviceName: { $first: '$serviceId.serviceName' }
                             }
                         },
                         numberOfOrders: {
@@ -424,6 +426,7 @@ exports.getCustomer = async (req, res) => {
                     $project: {
                         _id: '$customer._id',
                         name: '$customer.name',
+                        userName: '$customer.userName',
                         email: '$customer.email',
                         age: '$customer.age',
                         profilePic: '$customer.profilePic',
@@ -774,6 +777,7 @@ exports.getServiceProvider = async (req, res) => {
                                 customer: {
                                     _id: { $first: '$customerId._id' },
                                     name: { $first: '$customerId.name' },
+                                    userName: { $first: '$customerId.userName' },
                                     profilePic: { $first: '$customerId.profilePic' },
                                 },
                             }
@@ -808,6 +812,7 @@ exports.getServiceProvider = async (req, res) => {
                     $project: {
                         _id: '$serviceProvider._id',
                         name: '$serviceProvider.name',
+                        userName: '$serviceProvider.userName',
                         email: '$serviceProvider.email',
                         age: '$serviceProvider.age',
                         profilePic: '$serviceProvider.profilePic',
@@ -817,6 +822,11 @@ exports.getServiceProvider = async (req, res) => {
                         averageRating: {
                             $ifNull: [
                                 { $first: '$service.averageRating' },
+                                0]
+                        },
+                        numberOfRatings: {
+                            $ifNull: [
+                                { $first: '$service.numberOfRatings' },
                                 0]
                         },
                         orders: true,
