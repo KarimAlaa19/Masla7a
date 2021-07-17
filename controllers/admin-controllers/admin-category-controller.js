@@ -177,7 +177,6 @@ exports.getAllCategories = async (req, res) => {
 
         const categories = await Category
             .aggregate([
-
                 {
                     $lookup: {
                         from: 'services',
@@ -263,7 +262,6 @@ exports.getAllCategories = async (req, res) => {
         });
     }
 };
-
 
 exports.addCategory = async (req, res) => {
     if (req.user.role !== "admin")

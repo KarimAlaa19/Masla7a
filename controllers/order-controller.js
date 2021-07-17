@@ -8,23 +8,53 @@ const { validateCreateOrder } = require("../validators/order-validator");
 
 
 exports.getUserOrders = async (req, res) => {
+
   try {
 
-    if (req.user.role === "admin")
-      return res
-        .status(400)
-        .json({ message: "There is no orders for admins" });
+    let status = req.query.status ?
+      req.query.status : 'pending';
 
     let orders;
 
     if (req.user.role === "customer") {
       orders = await Order
-        .find({ customerId: req.user._id })
-        .populate("customerId");
+        .find({
+          customerId: req.user._id,
+          status: status
+        })
+        .select({
+          serviceName: true,
+          price: true,
+          status: true,
+          startsAt: true,
+          orderDate: true,
+          serviceId: true,
+          serviceProviderId: true
+        })
+        .populate('serviceProviderId', {
+          name: true
+        })
+        .populate('serviceId', { serviceName: true });
+
     } else {
       orders = await Order
-        .find({ serviceProviderId: req.user._id })
-        .populate("serviceProviderId");
+        .find({
+          serviceProviderId: req.user._id,
+          status: status
+        })
+        .select({
+          serviceName: true,
+          price: true,
+          status: true,
+          startsAt: true,
+          orderDate: true,
+          serviceId: true,
+          customerId: true
+        })
+        .populate('customerId', {
+          name: true
+        })
+        .populate('serviceId', { serviceName: true });
     }
 
     if (orders.length === 0)
@@ -45,26 +75,138 @@ exports.getUserOrders = async (req, res) => {
 
 
 exports.getOrder = async (req, res) => {
+
+  if (!mongoose.isValidObjectId(req.params.orderId))
+    return res.status(400).json({
+      status: 'Failed',
+      message: 'The Order ID is Invalid'
+    });
+
   try {
 
-    if (req.user.role === "admin")
-      return res
-        .status(400)
-        .json({ message: "There is no orders for admins" });
+    let order
 
-    const order = await Order
-      .findById({ customerId: req.user._id, _id: req.params.orderId })
-      .populate("customerId")
-      .populate('serviceProviderId');
+    if (req.user.role === "customer") {
+      order = await Order
+        .aggregate([
+          {
+            $match: {
+              _id: mongoose.Types.ObjectId(req.params.orderId)
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'serviceProviderId',
+              foreignField: '_id',
+              as: 'serviceProviderId'
+            }
+          },
+          {
+            $lookup: {
+              from: 'services',
+              localField: 'serviceId',
+              foreignField: '_id',
+              as: 'serviceId'
+            }
+          },
+          {
+            $lookup: {
+              from: 'categories',
+              localField: 'serviceId.categoryId',
+              foreignField: '_id',
+              as: 'serviceId.categoryId'
+            }
+          },
+          {
+            $project: {
+              orderName: '$serviceName',
+              price: true,
+              status: true,
+              startsAt: true,
+              endsAt: true,
+              orderDate: true,
+              createdAt: true,
+              address: true,
+              serviceProvider: {
+                _id: { $first: '$serviceProviderId._id' },
+                name: { $first: '$serviceProviderId.name' },
+              },
+              serviceProvider: {
+                _id: { $first: '$serviceProviderId._id' },
+                name: { $first: '$serviceProviderId.name' },
+              },
+              category: {
+                _id: { $first: '$serviceId.categoryId._id' },
+                name: { $first: '$serviceId.categoryId.name' },
+              }
+            }
+          }
+        ]);
+
+    } else {
+      order = await Order
+        .aggregate([
+          {
+            $match: {
+              _id: mongoose.Types.ObjectId(req.params.orderId)
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'customerId',
+              foreignField: '_id',
+              as: 'customerId'
+            }
+          },
+          {
+            $lookup: {
+              from: 'services',
+              localField: 'serviceId',
+              foreignField: '_id',
+              as: 'serviceId'
+            }
+          },
+          {
+            $lookup: {
+              from: 'categories',
+              localField: 'serviceId.categoryId',
+              foreignField: '_id',
+              as: 'serviceId.categoryId'
+            }
+          },
+          {
+            $project: {
+              orderName: '$serviceName',
+              price: true,
+              status: true,
+              startsAt: true,
+              endsAt: true,
+              orderDate: true,
+              createdAt: true,
+              address: true,
+              customer: {
+                _id: { $first: '$customerId._id' },
+                name: { $first: '$customerId.name' },
+              },
+              category: {
+                _id: { $first: '$serviceId.categoryId._id' },
+                name: { $first: '$serviceId.categoryId.name' },
+              }
+            }
+          }
+        ]);
+    }
 
 
-    if (!order)
+    if (!order[0])
       return res.status(200).json({
         message: "You Didn't Make Any Order Yet",
       });
 
     res.status(200).json({
-      order: order,
+      order: order[0],
     });
   } catch (err) {
     res.status(500).json({
@@ -216,6 +358,14 @@ exports.confirmOrder = async (req, res, next) => {
 
 
 exports.canceleOrder = async (req, res) => {
+
+  if (!mongoose.isValidObjectId(req.params.orderId))
+    return res.status(400).json({
+      status: 'Failed',
+      message: 'The Order ID is Invalid'
+    });
+
+
   try {
 
     const order = await Order

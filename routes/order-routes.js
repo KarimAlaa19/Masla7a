@@ -18,6 +18,6 @@ router.post('/create-order', extractingToken, createOrder);
 
 router.post('/confirm-order', extractingToken, confirmOrder);
 
-router.get('/cancele-order/:orderId', extractingToken, canceleOrder);
+router.put('/cancele-order/:orderId', extractingToken, canceleOrder);
 
 module.exports = router;
