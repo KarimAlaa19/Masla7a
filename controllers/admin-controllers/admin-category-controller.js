@@ -525,17 +525,22 @@ exports.getAllServicesInCategory = async (req, res) => {
                         averageRating: {
                             $ifNull: ['$averageRating', 0]
                         },
+                        numberOfRatings: {
+                            $ifNull: ['$numberOfRatings', 0]
+                        },
                         numberOfOrders: {
                             $ifNull: [
                                 { $first: '$orders.numberOfOrders' },
                                 0
                             ]
                         },
+                        initialPrice: '$servicePrice',
                         serviceProfit: '$servicePrice',
                         serviceProvider: {
                             _id: { $first: '$serviceProviderId._id' },
                             name: { $first: '$serviceProviderId.name' },
-                            profilePic: { $first: '$serviceProviderId.profilePic' }
+                            profilePic: { $first: '$serviceProviderId.profilePic' },
+                            userName: { $first: '$serviceProviderId.userName' }
                         }
                     }
                 },

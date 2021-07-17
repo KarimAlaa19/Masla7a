@@ -11,6 +11,7 @@ const { getNewUswes,
     getCustomer,
     getServiceProvider } =
     require('../../controllers/admin-controllers/admin-users-controller');
+// const { exportData } = require('../../controllers/admin-controllers/admin-export-controller');
 
 
 const router = express.Router();
@@ -43,6 +44,9 @@ router.get('/customers/:customerId', getCustomer);
 //Path /admin/control/users/active-customers
 router.get('/active-customers', getActiveCustomers);
 
+//admin/control/users/customers/export-data
+// router.post('/customers/export-data', exportData);
+
 
 //          Service Providers Routes
 
@@ -54,6 +58,9 @@ router.get('/service-providers/:serviceProviderId', getServiceProvider);
 
 //Path /admin/control/users/top-service-providers
 router.get('/top-service-providers', getTopServiceProviders);
+
+//admin/control/users/service-providers/export-data
+// router.post('/service-providers/export-data', exportData);
 
 
 module.exports = router;

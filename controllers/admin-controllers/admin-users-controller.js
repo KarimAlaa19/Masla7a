@@ -89,15 +89,29 @@ exports.getNewUswes = async (req, res) => {
                 }
             ]);
 
+        const joiningDays = [];
 
         newUsers.forEach(user => {
             let hours = Math.abs(Date.now() - user.dateOfCreate) / 36e5;
             user.memberForHours = parseInt(hours);
+            joiningDays.push(Math.round(parseInt(hours) / 24));
             delete user.dateOfCreate;
         });
 
+        const growthProgress = [];
+        let counter = 1;
+        joiningDays.forEach((day, index, arr) => {
+            if (day === arr[index + 1]) {
+                counter++;
+            } else {
+                growthProgress.push(counter);
+                counter = 1;
+            }
+        });
 
         res.status(200).json({
+            growthProgress: growthProgress.length === 0 ?
+                [0] : growthProgress,
             numberOfNewUsers: newUsers.length,
             percentageOfGrowing:
                 Number(((newUsers.length / totalUsers.length) * 100).toFixed(1)),
@@ -251,6 +265,7 @@ exports.getAllCustomers = async (req, res) => {
                     $project: {
                         name: true,
                         email: true,
+                        userName: true,
                         profilePic: true,
                         phone_number: true,
                         city: '$location.city',
@@ -358,6 +373,14 @@ exports.getCustomer = async (req, res) => {
                         as: 'serviceProviderId'
                     }
                 },
+                // {
+                //     $lookup: {
+                //         from: 'services',
+                //         localField: 'serviceId',
+                //         foreignField: '_id',
+                //         as: 'serviceId'
+                //     }
+                // },
                 {
                     $sort: sortOrdersBy(req.query.sort)
                 },
@@ -367,7 +390,7 @@ exports.getCustomer = async (req, res) => {
                         orders: {
                             $push: {
                                 _id: '$_id',
-                                serviceName: '$serviceName',
+                                orderName: '$serviceName',
                                 startsAt: '$startsAt',
                                 price: '$price',
                                 status: '$status',
@@ -376,6 +399,7 @@ exports.getCustomer = async (req, res) => {
                                     name: { $first: '$serviceProviderId.name' },
                                     profilePic: { $first: '$serviceProviderId.profilePic' },
                                 },
+                                // serviceName: { $first: '$serviceId.serviceName' }
                             }
                         },
                         numberOfOrders: {
@@ -474,7 +498,7 @@ exports.getActiveCustomers = async (req, res) => {
             if (new Date(req.query.date_from) >= new Date(req.query.date_to))
                 return res.status(400).json({
                     message: 'The Start Date is Greater Than The End Date.'
-                })
+                });
         }
 
         const dateInterval = {
@@ -513,6 +537,9 @@ exports.getActiveCustomers = async (req, res) => {
                         },
                         numberOfOrders: {
                             $sum: 1
+                        },
+                        orders: {
+                            $push: '$orderDate'
                         }
                     }
                 },
@@ -529,7 +556,8 @@ exports.getActiveCustomers = async (req, res) => {
                         _id: { $first: '$customer._id' },
                         name: { $first: '$customer.name' },
                         profilePic: { $first: '$customer.profilePic' },
-                        numberOfOrders: true
+                        numberOfOrders: true,
+                        orders: true
                     }
                 },
                 {
@@ -539,7 +567,38 @@ exports.getActiveCustomers = async (req, res) => {
                 }
             ]);
 
+
+        const ordersDates = [];
+
+        activeCustomers.forEach(customer => {
+            ordersDates.push(...customer.orders);
+            delete customer.orders;
+        });
+
+        ordersDates.forEach((orderDate, index, arr) => {
+            arr[index] =
+                Math.round(((Date.now() - orderDate) / 36e5) / 24);
+        });
+
+        ordersDates.sort((x, y) => {
+            return y - x;
+        });
+
+
+        const growthProgress = [];
+        let counter = 1;
+        ordersDates.forEach((day, index, arr) => {
+            if (day === arr[index + 1]) {
+                counter++;
+            } else {
+                growthProgress.push(counter);
+                counter = 1;
+            }
+        });
+
         res.status(200).json({
+            growthProgress: growthProgress.length === 0 ?
+                [0] : growthProgress,
             numberOfActiveCustomers: activeCustomers.length,
             percentageOfActiveCustomers:
                 Number(((activeCustomers.length / totalCustomers.length) * 100).toFixed(1)),
@@ -594,7 +653,7 @@ exports.getAllServiceProviders = async (req, res) => {
                         profilePic: { $first: '$serviceProvider.profilePic' },
                         city: { $first: '$serviceProvider.location.city' },
                         phone: { $first: '$serviceProvider.phone_number' },
-                        serviceId: '$_id',
+                        serviceName: true,
                         averageRating: true,
                         numberOfRatings: true,
                         numberOfOrders: {

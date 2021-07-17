@@ -90,11 +90,14 @@ exports.getRecentOrders = async (req, res) => {
                         status: true,
                         customer: {
                             _id: { $first: '$customerId._id' },
-                            name: { $first: '$customerId.name' }
+                            name: { $first: '$customerId.name' },
+                            profilePic: { $first: '$customerId.profilePic' }
+
                         },
                         serviceProvider: {
                             _id: { $first: '$serviceProviderId._id' },
-                            name: { $first: '$serviceProviderId.name' }
+                            name: { $first: '$serviceProviderId.name' },
+                            profilePic: { $first: '$serviceProviderId.profilePic' }
                         }
                     }
                 },
@@ -135,7 +138,13 @@ exports.getAllOrders = async (req, res) => {
     try {
         let queryData = {
             status: !req.query.status ?
-                undefined : req.query.status
+                undefined : req.query.status,
+
+            'location.city': !req.query.city ?
+                undefined : new RegExp(`.*${req.query.city}.*`, 'i'),
+
+            'serviceId.categoryId': !req.query.categoryId ?
+                undefined : mongoose.Types.ObjectId(req.query.categoryId)
         };
 
         if (req.query.date_from && req.query.date_to) {
@@ -163,15 +172,15 @@ exports.getAllOrders = async (req, res) => {
         let orders = await Order
             .aggregate([
                 {
-                    $match: queryData
-                },
-                {
                     $lookup: {
                         from: 'services',
                         localField: 'serviceId',
                         foreignField: '_id',
                         as: 'serviceId'
                     }
+                },
+                {
+                    $match: queryData
                 },
                 {
                     $lookup: {
@@ -205,15 +214,21 @@ exports.getAllOrders = async (req, res) => {
                         city: '$location.city',
                         status: true,
                         price: true,
+                        createdAt: true,
+                        startsAt: true,
+                        endsAt: true,
+                        // paymentMethod: true,
                         customer: {
                             _id: { $first: '$customerId._id' },
                             name: { $first: '$customerId.name' },
                             profilePic: { $first: '$customerId.profilePic' },
+                            userName: { $first: '$customerId.userName' }
                         },
                         serviceProvider: {
                             _id: { $first: '$serviceProviderId._id' },
                             name: { $first: '$serviceProviderId.name' },
                             profilePic: { $first: '$serviceProviderId.profilePic' },
+                            userName: { $first: '$serviceProviderId.userName' }
                         },
                         category: {
                             _id: { $first: '$serviceId.categoryId._id' },
