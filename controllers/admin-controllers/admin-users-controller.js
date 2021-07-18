@@ -242,7 +242,7 @@ exports.getAllCustomers = async (req, res) => {
                     }
                 }
             ]);
-            
+
 
         let customers = await User
             .aggregate([
@@ -438,7 +438,6 @@ exports.getCustomer = async (req, res) => {
                 }
             ]);
 
-
         if (customer.length === 0) {
             customer = await User
                 .aggregate([
@@ -468,6 +467,12 @@ exports.getCustomer = async (req, res) => {
                     }
                 ]);
         }
+
+        if (customer.length === 0)
+            return res.status(400).json({
+                status: 'Failed',
+                message: 'Customer Not Found'
+            });
 
 
         res.status(200).json({
