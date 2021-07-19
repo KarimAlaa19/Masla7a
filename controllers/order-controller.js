@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
-const jwt = require('jsonwebtoken');
-const config = require('config');
 const _ = require("lodash");
 const Order = require("../models/order-model");
 const Service = require("../models/service-model");
+const User = require('../models/user-model');
 const { validateCreateOrder } = require("../validators/order-validator");
 
 
@@ -221,15 +220,23 @@ exports.createOrder = async (req, res) => {
     return res.status(400).json({ errorMessage: error.details[0].message });
 
   try {
-    const token = jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'));
 
-    if (!mongoose.isValidObjectId(token._id)) {
+    if (!mongoose.isValidObjectId(req.user._id)) {
       return res.status(401).json({
         message: "Access Denied"
       });
     }
 
-    if (token.role !== 'serviceProvider') {
+    const serviceProvider = await User.findById(req.user._id);
+
+    if (!serviceProvider)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The Service Provider Not Found'
+      });
+
+
+    if (serviceProvider.role !== 'serviceProvider') {
       return res.status(401).json({
         message: 'Access Denied, Only Service Providers Can Access'
       });
@@ -245,7 +252,7 @@ exports.createOrder = async (req, res) => {
       "notes"
     ]);
 
-    req.body.serviceProviderId = token._id;
+    req.body.serviceProviderId = serviceProvider._id;
 
 
 
@@ -312,6 +319,14 @@ exports.createOrder = async (req, res) => {
       ]),
     });
   } catch (err) {
+
+    if (err.message === "Cannot read property 'longitude' of undefined" ||
+      err.message === "Cannot read property 'latitude' of undefined" ||
+      err.message === "Response status code is 400")
+      return res.status(400).json({
+        message: "The Address You Entered Is Not Valid",
+      });
+
     res.status(500).json({
       message: err.message,
     });
@@ -321,7 +336,14 @@ exports.createOrder = async (req, res) => {
 
 exports.confirmOrder = async (req, res, next) => {
   try {
-    const token = jwt.verify(req.header('x-auth-token'), config.get('jwtPrivateKey'));
+
+    const customer = await User.findById(req.user._id);
+
+    if (!customer)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The Customer Not Found'
+      });
 
     req.body = _.pick(req.body, [
       "serviceProviderId",
@@ -336,7 +358,7 @@ exports.confirmOrder = async (req, res, next) => {
       "notes"
     ]);
 
-    req.body.customerId = token._id;
+    req.body.customerId = customer._id;
 
     const service = await Service.findById(req.body.serviceId)
 

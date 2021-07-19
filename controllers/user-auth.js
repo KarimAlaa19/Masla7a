@@ -28,12 +28,12 @@ const addUser = async (req, res) => {
     role: req.body.role,
     address: req.body.address,
   });
-  if(req.body.deviceToken ){
+  if (req.body.deviceToken) {
     console.log('helloooo')
     let pushToken = {
-      deviceToken : req.body.deviceToken
+      deviceToken: req.body.deviceToken
     }
-    console.log('Before pushing '+pushToken)
+    console.log('Before pushing ' + pushToken)
     await user.pushTokens.push(pushToken);
     console.log(user.pushTokens[0]);
   }
@@ -164,7 +164,9 @@ exports.addingUser = async (req, res, next) => {
         user: _.pick(user, ["_id", "name", "email", "role", "gotAddress"]),
       });
   } catch (err) {
-    if (err.message === "Cannot read property 'longitude' of undefined") {
+    if (err.message === "Cannot read property 'longitude' of undefined" ||
+      err.message === "Cannot read property 'latitude' of undefined" ||
+      err.message === "Response status code is 400") {
       return res.status(400).json({
         message: "The Address You Entered Is Not Valid",
       });

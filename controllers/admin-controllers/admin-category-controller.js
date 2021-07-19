@@ -390,6 +390,11 @@ exports.deleteCategory = async (req, res) => {
                 message: "The Category 'Others' not Found",
             });
 
+        if (req.params.categoryId === othersCategory._id)
+            return res.status(400).json({
+                status: 'Failed',
+                message: 'You Can not Delete This Category'
+            });
 
         const deletedCategory = await Category
             .findByIdAndDelete(req.params.categoryId);

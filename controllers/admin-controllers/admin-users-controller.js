@@ -431,7 +431,7 @@ exports.getCustomer = async (req, res) => {
                         age: '$customer.age',
                         profilePic: '$customer.profilePic',
                         phone_number: '$customer.phone_number',
-                        address: '$customer.address',
+                        address: '$customer.location.formattedAddres',
                         orders: true,
                         numberOfOrders: true
                     }
@@ -460,7 +460,7 @@ exports.getCustomer = async (req, res) => {
                             age: true,
                             profilePic: true,
                             phone_number: true,
-                            address: true,
+                            'location.formattedAddres': true,
                             orders: true,
                             numberOfOrders: true
                         }
@@ -822,7 +822,7 @@ exports.getServiceProvider = async (req, res) => {
                         age: '$serviceProvider.age',
                         profilePic: '$serviceProvider.profilePic',
                         phone_number: '$serviceProvider.phone_number',
-                        address: '$serviceProvider.address',
+                        address: '$serviceProvider.location.formattedAddres',
                         serviceName: { $first: '$service.serviceName' },
                         averageRating: {
                             $ifNull: [
@@ -871,7 +871,7 @@ exports.getServiceProvider = async (req, res) => {
                             age: true,
                             profilePic: true,
                             phone_number: true,
-                            address: true,
+                            'location.formattedAddres': true,
                             serviceName: { $first: '$service.serviceName' },
                             averageRating: {
                                 $ifNull: [

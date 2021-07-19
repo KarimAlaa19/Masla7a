@@ -17,8 +17,8 @@ const { getNewUswes,
 const router = express.Router();
 
 
-//Path /admin/control/users/user/:id
-router.get('/user/:id', getUser);
+// //Path /admin/control/users/user/:id
+// router.get('/user/:id', getUser);
 
 //Path /admin/control/users/delete/:id
 router.delete('/user/delete/:id', deleteUser);

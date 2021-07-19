@@ -80,7 +80,7 @@ const userSchema = new mongoose.Schema({
             type: [Number],
             index: '2dsphere'
         },
-        // formattedAddres: String,
+        formattedAddres: String,
         // zipcode: String,
         city: String,
         streetName: String,
@@ -162,18 +162,19 @@ userSchema.methods.generateAuthToken = function () {
 
 userSchema.pre('save', async function (next) {
     if (this.address) {
-        const loc = await geocoder.geocode(this.address);
+        let loc = await geocoder.geocode(this.address);
+        loc = await geocoder.reverse({ lat: loc[0].latitude, lon: loc[0].longitude })
         this.location = {
             type: 'Point',
             coordinates: [loc[0].longitude, loc[0].latitude],
-            // formattedAddres: loc[0].formattedAddress,
+            formattedAddres: loc[0].formattedAddress,
             city: loc[0].city,
             // zipcode: loc[0].zipcode,
             streetName: loc[0].streetName,
             streetNumber: loc[0].streetNumber,
             countryCode: loc[0].countryCode
         };
-        this.address = loc[0].formattedAddress;
+        // this.address = loc[0].formattedAddress;
     }
     next();
 });

@@ -73,6 +73,7 @@ const orderSchema = new mongoose.Schema({
             index: '2dsphere'
         },
         // zipcode: String,
+        formattedAddres: String,
         city: String,
         streetName: String,
         streetNumber: String,
@@ -83,10 +84,12 @@ const orderSchema = new mongoose.Schema({
 
 
 orderSchema.pre('save', async function (next) {
-    const loc = await geocoder.geocode(this.address);
+    let loc = await geocoder.geocode(this.address);
+    loc = await geocoder.reverse({ lat: loc[0].latitude, lon: loc[0].longitude })
     this.location = {
         type: 'Point',
         coordinates: [loc[0].longitude, loc[0].latitude],
+        formattedAddres: loc[0].formattedAddress,
         // zipcode: loc[0].zipcode,
         city: loc[0].city,
         streetName: loc[0].streetName,
@@ -94,7 +97,7 @@ orderSchema.pre('save', async function (next) {
         countryCode: loc[0].countryCode,
         country: loc[0].country
     };
-    this.address = loc[0].formattedAddress;
+    // this.address = loc[0].formattedAddress;
     next();
 });
 
