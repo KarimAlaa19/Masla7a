@@ -14,7 +14,7 @@ exports.fetchAll = async (req, res, next) => {
     }
   );
   console.log(conversations)
-  res.status(200).send(conversations);
+  res.status(200).json(conversations);
 }; 
 
 exports.fetchMessages = async (req, res, next) => {

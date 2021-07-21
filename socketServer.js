@@ -36,14 +36,16 @@ const socketServer = (server) => {
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
         });
 
+        console.log(conversation)
         //Create a conversation if there isn't
         if (!conversation) {
           conversation = await new Conversation({
             users: [senderID, data.to],
           });
+          console.log('We are converation condition')
           await conversation.save();
         }
-        console.log(conversation);
+        //console.log(conversation);
 
         //saving messages to the Database
               
