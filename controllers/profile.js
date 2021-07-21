@@ -18,7 +18,7 @@ exports.getUserInfo = async (req, res, next) => {
 
   const userID = mongoose.Types.ObjectId(req.params.id);
   const user = await User.findById(userID)
-  .select("name userName profilePic gallery availability gender age");
+  .select("name userName profilePic gallery availability gender age address");
 
   if (!user)
     return res.status(400).json({ message: "There is no User with such ID " });
@@ -131,7 +131,7 @@ exports.addIntoGallery = async (req, res, next) => {
       }
     }
   }
-  res.status(200).json({ user: user });
+  res.status(200).json({ user, service });
 };
 //#endregion
 
