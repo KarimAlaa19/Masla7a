@@ -8,4 +8,7 @@ router.get('/',conversationControl.fetchAll);
 
 router.get('/:id/messages', conversationControl.fetchMessages);
 
+
+router.delete('/:id', conversationControl.deleteConversation);
+
 module.exports = router;

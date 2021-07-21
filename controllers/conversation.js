@@ -38,3 +38,17 @@ exports.fetchMessages = async (req, res, next) => {
   console.log(messages)
   res.status(200).json(messages);
 };
+
+exports.deleteConversation = async(req, res, next)=>{
+  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+
+  const conversationID = mongoose.Types.ObjectId(req.params.id);
+  const conversation = await Conversation.findById(conversationID);
+  
+  if(!conversation)
+  return res.status(400).json({message :'There Is No conversation With Such ID'});
+
+  
+ await conversation.remove();
+  res.status(200).json({message: 'Deleted Successfully'})
+}
