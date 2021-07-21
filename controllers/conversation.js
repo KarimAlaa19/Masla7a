@@ -10,22 +10,22 @@ exports.fetchAll = async (req, res, next) => {
     req.allowPagination,
     {
       sort: 'updatedAt',
-      populate: [{ path: "users", select: "name profilePic" }, "lastMessage"],
+      select:'-createdAt -updatedAt',
+      populate: [{ path: "users", select: "name profilePic availability" },{ path: "lastMessage", select: "user content createdAt" } ],
     }
   );
-  console.log(conversations)
   res.status(200).json(conversations);
 }; 
 
 exports.fetchMessages = async (req, res, next) => {
   if(req.params.id.length != 24 )
-  return res.status(404).send("Invalid ID");
+  return res.status(404).json("Invalid ID");
   
   const conversationID = mongoose.Types.ObjectId(req.params.id)
   const conversation = await Conversation.findById(conversationID);
   console.log(conversation);
   if (!conversation)
-    return res.status(404).send("No conversation with such ID");
+    return res.status(404).json("No conversation with such ID");
 
   const messages = await Message.find(
     req.allowPagination,
@@ -36,5 +36,5 @@ exports.fetchMessages = async (req, res, next) => {
   .select('content attachment')
   .sort('-createdAt');
   console.log(messages)
-  res.status(200).send(messages);
+  res.status(200).json(messages);
 };
