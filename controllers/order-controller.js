@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const _ = require("lodash");
+const {Notification} = require("../models/notification");
 const Order = require("../models/order-model");
 const Service = require("../models/service-model");
 const User = require('../models/user-model');
@@ -416,6 +417,21 @@ exports.canceleOrder = async (req, res) => {
       message: 'Order Canceled Successfully'
     });
 
+     //Saving in-app notification for the request
+     const notification = await new Notification({
+      title: "Order Has Been Cancelled",
+      body: `User ${order.customerId} Cancelled the order`,
+      senderUser: order.customerId,
+      targetUsers:  order.serviceProviderId,
+      subjectType: "Order",
+      subject: order._id,
+    })
+    await notification.save();
+
+  //push firebase notification
+  await serviceProvider.user_send_notification(
+      notification.toFirebaseNotification()
+    );
 
   } catch (err) {
     res.status(500).json({

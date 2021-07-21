@@ -1,4 +1,6 @@
 const User = require("../models/user-model");
+const Complaint = require('../models/complaint');
+const Validator = require('../validators/complaint-validator');
 const mongoose = require("mongoose");
 const _ = require("lodash");
 
@@ -53,3 +55,26 @@ exports.getAllServiceProviders = async (req, res)=>{
   console.log(obj)
   return res.status(200).json({serviceProviders})
 }
+
+//#region Posting A Complaint
+exports.postComplaint = async (req, res)=>{
+  const complainant = req.user;
+  if(complainant.role !=='customer')
+  return res.status(401).json('This Section Is Only For Customers Complaints');
+
+  const {error} = await Validator.validateComplaint(req.body);
+  if(error) return res.status(400).json(error.details[0].message);
+
+  const serviceProvider = await User.findOne({userName: req.body.userName});
+  const previousComplaint = await Complaint.findOne({serviceProvider:serviceProvider._id, user:complainant._id})
+  
+  const complaint = new Complaint({
+    serviceProvider: serviceProvider._id,
+    user: complainant._id,
+    complaintType: req.body.complaintType,
+    description: req.body.description
+  });
+  await complaint.save();
+  return res.status(200).json({message:'Complaint Has Been Submited Successfully'});
+}
+//#endregion
