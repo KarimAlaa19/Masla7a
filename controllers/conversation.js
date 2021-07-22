@@ -20,6 +20,9 @@ exports.fetchAll = async (req, res, next) => {
 exports.fetchMessages = async (req, res, next) => {
   if(req.body.id.length != 24 )
   return res.status(404).json("Invalid ID");
+
+  if(!req.body.id)
+  return res.status(400).json('YOU MUST ENTER THE CONVERSATION ID');
   
   const conversationID = mongoose.Types.ObjectId(req.body.id)
   const conversation = await Conversation.findById(conversationID);
