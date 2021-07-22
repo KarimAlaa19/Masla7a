@@ -18,12 +18,11 @@ exports.fetchAll = async (req, res, next) => {
 }; 
 
 exports.fetchMessages = async (req, res, next) => {
-  if(req.params.id.length != 24 )
+  if(req.body.id.length != 24 )
   return res.status(404).json("Invalid ID");
   
-  const conversationID = mongoose.Types.ObjectId(req.params.id)
+  const conversationID = mongoose.Types.ObjectId(req.body.id)
   const conversation = await Conversation.findById(conversationID);
-  console.log(conversation);
   if (!conversation)
     return res.status(404).json("No conversation with such ID");
 
@@ -33,14 +32,14 @@ exports.fetchMessages = async (req, res, next) => {
       conversation: conversationID,
     }
   ).populate('user', 'name profilePic')
-  .select('content attachment')
+  .select('content attachment createdAt')
   .sort('-createdAt');
-  console.log(messages)
+
   res.status(200).json(messages);
 };
 
 exports.deleteConversation = async(req, res, next)=>{
-  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+  if (req.params.id.length != 24) return res.status(404).json("Invalid ID");
 
   const conversationID = mongoose.Types.ObjectId(req.params.id);
   const conversation = await Conversation.findById(conversationID);

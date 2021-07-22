@@ -4,9 +4,9 @@ const conversationControl = require('../controllers/conversation');
 const router = express.Router();
 
 router.use(usersController.extractingToken);
-router.get('/',conversationControl.fetchAll);
+router.get('/my-conversations',conversationControl.fetchAll);
 
-router.get('/:id/messages', conversationControl.fetchMessages);
+router.get('/', conversationControl.fetchMessages);
 
 
 router.delete('/:id', conversationControl.deleteConversation);
