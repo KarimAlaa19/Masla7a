@@ -18,7 +18,7 @@ exports.getUserInfo = async (req, res, next) => {
 
   const userID = mongoose.Types.ObjectId(req.params.id);
   const user = await User.findById(userID)
-  .select("name userName profilePic gallery availability gender age address");
+  .select("name userName profilePic gallery availability gender age address phone_number");
 
   if (!user)
     return res.status(400).json({ message: "There is no User with such ID " });
@@ -27,8 +27,8 @@ exports.getUserInfo = async (req, res, next) => {
     .populate("services")
     .select("serviceName servicePrice description gallery averageRating numberOfRatings");
   const reviews = await Review.find({ serviceID: service._id })
-    .populate("user", "name profilePic -_id")
-    .select("title content rating _id");
+    .populate("user", "name profilePic  -_id")
+    .select("title content rating _id ");
 
   const schedule = await Order
   .find({serviceProviderId:userID, status:{$nin:['completed','canceled']}})
