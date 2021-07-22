@@ -68,6 +68,8 @@ exports.postComplaint = async (req, res)=>{
   const serviceProvider = await User.findOne({userName: req.body.userName});
   const previousComplaint = await Complaint.findOne({serviceProvider:serviceProvider._id, user:complainant._id})
   
+  if(previousComplaint)return res.status(400).json('You Have Already submited A compliant');
+  
   const complaint = new Complaint({
     serviceProvider: serviceProvider._id,
     user: complainant._id,
