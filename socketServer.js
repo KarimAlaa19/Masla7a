@@ -25,8 +25,9 @@ const socketServer = (server) => {
 
       await socket.join(`user ${senderID}`);
 
-      socket.on("private", async (data) => {
-        console.log("We are at private event");
+      socket.on("private", async (data, ack) => {
+        
+        ack('We are at private')
         console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
@@ -39,6 +40,7 @@ const socketServer = (server) => {
         console.log(conversation)
         //Create a conversation if there isn't
         if (!conversation) {
+          console.log('hello we are at new conversation')
           conversation = await new Conversation({
             users: [senderID, data.to],
           });

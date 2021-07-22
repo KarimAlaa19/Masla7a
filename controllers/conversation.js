@@ -31,7 +31,6 @@ exports.fetchMessages = async (req, res, next) => {
     return res.status(404).json("No conversation with such ID");
 
   const messages = await Message.find(
-    req.allowPagination,
     {
       conversation: conversationID,
     }
@@ -39,6 +38,7 @@ exports.fetchMessages = async (req, res, next) => {
   .select('content attachment createdAt')
   .sort('-createdAt');
 
+  console.log(messages)
   res.status(200).json(messages);
 };
 

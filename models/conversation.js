@@ -16,18 +16,18 @@ const conversationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-conversationSchema.set("toJSON", {
-    virtuals: true,
-    transform: function (doc) {
-      return {
-        id: doc.id,
-        users: doc.users,
-        lastMessage: doc.lastMessage,
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
-      };
-    },
-  });
+// conversationSchema.set("toJSON", {
+//     virtuals: true,
+//     transform: function (doc) {
+//       return {
+//         id: doc.id,
+//         users: doc.users,
+//         lastMessage: doc.lastMessage,
+//         createdAt: doc.createdAt,
+//         updatedAt: doc.updatedAt,
+//       };
+//     },
+//   });
 
 conversationSchema.plugin(pagination);
 
