@@ -29,7 +29,7 @@ const socketServer = (server) => {
       //console.log(socket);
       await socket.join(`user ${senderID}`);
 
-      socket.emit('Hello from rim, you have connected successfully')
+      socket.emit("hello",'Hello from rim, you have connected successfully')
       socket.on("private", async (data, ack) => {
         
         ack('We are at private')
