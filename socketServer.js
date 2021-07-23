@@ -20,9 +20,8 @@ const socketServer = (server) => {
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
-      console.log(senderID);
+      //console.log(senderID);
       //console.log(socket);
-
       await socket.join(`user ${senderID}`);
 
       socket.on("private", async (data, ack) => {

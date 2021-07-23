@@ -6,22 +6,15 @@ const mongoose = require('mongoose')
 
 exports.fetchAll = async (req, res, next) => {
   const conversations = await Conversation.find(
-    { users: req.user._id },
-    req.allowPagination,
-    {
-      sort: 'updatedAt',
-      select:'-createdAt -updatedAt',
-      populate: [{ path: "users", select: "name profilePic availability" },{ path: "lastMessage", select: "user content createdAt" } ],
-    }
-  );
+    { users: req.user._id }
+  ).populate('users lastMessage','name profilePic availability user content createdAt')
+  .sort('-updatedAt')
+  .select('-createdAt -updatedAt')
   res.status(200).json(conversations);
 }; 
 
 exports.fetchMessages = async (req, res, next) => {
 
-  if(!req.body.id)
-  return res.status(400).json('YOU MUST ENTER THE CONVERSATION ID');
-  
   if(req.body.id.length != 24 )
   return res.status(404).json("Invalid ID");
 
@@ -38,7 +31,6 @@ exports.fetchMessages = async (req, res, next) => {
   .select('content attachment createdAt')
   .sort('-createdAt');
 
-  console.log(messages)
   res.status(200).json(messages);
 };
 
