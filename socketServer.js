@@ -10,7 +10,6 @@ const socketServer = (server) => {
   try {
     const io = socketIO(server);
 
-
     const nameSpace = io.of("/chatting");
     nameSpace.on(
       "connection",
@@ -21,6 +20,9 @@ const socketServer = (server) => {
       socket.emit('Hello from rim, you have connected successfully')
       }
     );
+
+
+    
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
