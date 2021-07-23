@@ -1,4 +1,3 @@
-
 const Joi = require('joi');
 const passwordComplexity = require('joi-password-complexity').default;
 
@@ -25,7 +24,7 @@ exports.validateSignUp = (user) => {
         role: Joi.string().required(),
         address: Joi.string().required(),
         deviceType: Joi.string(),
-        deviceToken : Joi.string().required()
+        deviceToken: Joi.string().required()
     });
 
     return schema.validate(user);
@@ -57,7 +56,21 @@ exports.validateServiceProvider = function validateServiceProvider(user) {
         userName: Joi.string().required(),
         role: Joi.string().required(),
         deviceType: Joi.string(),
-        deviceToken : Joi.string()
+        deviceToken: Joi.string()
     });
     return schema.validate(user);
 };
+
+
+exports.validateEditProfile = (user) => {
+    const schema = Joi.object({
+        name: Joi.string().min(3).max(55),
+        phone_number: Joi.string().min(11).max(18),
+        address: Joi.string(),
+        serviceName: Joi.string().min(3),
+        description: Joi.string().min(20).max(1024),
+        servicePrice: Joi.number()
+    });
+
+    return schema.validate(user);
+}

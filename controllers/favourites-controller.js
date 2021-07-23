@@ -80,7 +80,8 @@ exports.getFavourites = async (req, res, next) => {
                             serviceName: 1,
                             servicePrice: 1,
                             averageRating: 1,
-                            numberOfRatings: 1
+                            numberOfRatings: 1,
+                            servicePrice: 1
                         }
                     }
                 },
@@ -128,11 +129,17 @@ exports.addToFavourites = async (req, res, next) => {
     if ((!mongoose.isValidObjectId(req.body.serviceProviderId)) ||
         (req.body.serviceProviderId === undefined)) {
         return res.status(400).json({
-            message: 'The account you are trying to add to your favourites is not a valid'
+            message: 'The account you are trying to add to your favourites is invalid'
         });
     }
 
     try {
+
+        if (req.body.serviceProviderId === req.user._id)
+            return res.status(400).json({
+                status: 'Failed',
+                message: 'You Can not Add Yourself To Your Favorites.'
+            });
 
         const user = await User.findById(req.user._id);
 

@@ -1,8 +1,8 @@
 const express = require('express');
-const { getUser,
-    deleteUser } = require('../../controllers/admin');
 
-const { getNewUswes,
+const {
+    deleteUser,
+    getNewUswes,
     getActiveCustomers,
     getAllUsersRole,
     getTopServiceProviders,
