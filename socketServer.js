@@ -25,8 +25,6 @@ const socketServer = (server) => {
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
-      //console.log(senderID);
-      //console.log(socket);
       await socket.join(`user ${senderID}`);
 
       socket.emit("hello",'Hello from rim, you have connected successfully')
@@ -75,7 +73,7 @@ const socketServer = (server) => {
           createdAt: sentMessage.createdAt 
         }
         
-        nameSpace.to(`user ${data.to}`).emit("new-message", emittedData);
+        nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData);
         console.log("CHECK POINT WOOHOOO..");
         
           // // Send Notification in-app
