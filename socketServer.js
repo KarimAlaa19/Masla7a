@@ -10,6 +10,7 @@ const socketServer = (server) => {
   try {
     const io = socketIO(server);
 
+
     const nameSpace = io.of("/chatting");
     nameSpace.on(
       "connection",
