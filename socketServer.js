@@ -30,15 +30,11 @@ const socketServer = (server) => {
 
       socket.emit("hello",'Hello from rim, you have connected successfully')
       socket.on("private", async (data) => {
-
-       
+        
         console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
 
-        socket.emit("new message", {content:'Hello from rim',sender: senderID})
-        nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message",  {content:'Hello from rim',sender: senderID})
-        
         console.log('hello')
         let conversation = await Conversation.findOne({
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
@@ -77,8 +73,8 @@ const socketServer = (server) => {
           type: data.type,
           createdAt: sentMessage.createdAt 
         }
-        // socket.emit("new message", emittedData)
-        // nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData)
+        
+        nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData)
         console.log("CHECK POINT WOOHOOO..");
         
           // // Send Notification in-app
