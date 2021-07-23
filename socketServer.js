@@ -75,8 +75,8 @@ const socketServer = (server) => {
           createdAt: sentMessage.createdAt 
         }
         
-        console.log("CHECK POINT WOOHOOO..");
         nameSpace.to(`user ${data.to}`).emit("new-message", emittedData);
+        console.log("CHECK POINT WOOHOOO..");
         
           // // Send Notification in-app
           const receiver = await User.findById(data.to)
