@@ -22,7 +22,6 @@ const socketServer = (server) => {
     );
 
 
-    
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
