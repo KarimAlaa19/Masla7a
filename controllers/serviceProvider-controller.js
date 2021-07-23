@@ -20,8 +20,6 @@ const options = {
 exports.topServiceProviders = async (req, res, next) => {
     try {
 
-        const token = req.header('x-auth-token');
-
         const serviceProviders = await Service
             .aggregate([
                 {
@@ -74,26 +72,30 @@ exports.topServiceProviders = async (req, res, next) => {
             });
 
 
-        serviceProviders.map(serviceProvider => {
-            if (!serviceProvider.averageRating) {
-                serviceProvider.averageRating = 1
-            }
-        });
+        if (req.user) {
 
-        if (token) {
-            const decodedToken = jwt.verify(token, config.get('jwtPrivateKey'));
-
-            let user = await User.findById(decodedToken._id);
+            let user = await User.findById(req.user._id);
 
             if (!user)
                 return res.status(400).json({
                     message: 'The User Sent In The Token not Found'
                 });
 
-            serviceProviders.forEach((service => {
-                if (user.favouritesList.includes(service._id)) {
-                    service.favourite = true;
+
+            if (user.role === 'serviceProvider') {
+                for (let i = 0; i < serviceProviders.length; i++) {
+                    if (user._id.toString() ===
+                        serviceProviders[i].serviceProvider._id.toString()) {
+                        serviceProviders.splice(i, 1);
+                        break;
+                    }
                 }
+            }
+
+
+            serviceProviders.forEach(((service, index, arr) => {
+                if (user.favouritesList.includes(service._id))
+                    service.favourite = true;
             }));
         }
         return res.status(200).json({
@@ -290,6 +292,15 @@ exports.filterServices = async (req, res, next) => {
             ]);
 
 
+        if (userToken.role === 'serviceProvider') {
+            for (let i = 0; i < serviceProviders.length; i++) {
+                if (userToken._id.toString() ===
+                    serviceProviders[i]._id.toString()) {
+                    serviceProviders.splice(i, 1);
+                    break;
+                }
+            }
+        }
 
         if (userToken) {
             serviceProviders.forEach((serviceProvider => {

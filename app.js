@@ -34,6 +34,7 @@ var corsOption = {
 app.use(cors(corsOption));
 
 app.use(express.json());
+app.use(express.urlencoded({extended: true}));
 
 app.use('/admin/control', adminRoute);
 app.use('/home', homeRoute);
@@ -43,7 +44,7 @@ app.use('/my-profile', userProfile);
 app.use('/chatting', conversationRouter);
 app.use('/categories', categoryRouter);
 app.use('/favourites', favouritesRouter);
-app.use('/notifications',notificationRouter)
+app.use('/notifications', notificationRouter)
 app.use('/request', requestRouter);
 app.use('/offer', offerRouter);
 app.use('/', _404);

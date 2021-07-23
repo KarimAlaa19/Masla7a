@@ -11,6 +11,7 @@ const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const cloud = require("../images/images-controller/cloudinary");
 const fs = require("fs");
+const { validateEditProfile } = require('../validators/user-validator');
 
 //#region Getting profile information
 exports.getUserInfo = async (req, res, next) => {
@@ -18,7 +19,7 @@ exports.getUserInfo = async (req, res, next) => {
 
   const userID = mongoose.Types.ObjectId(req.params.id);
   const user = await User.findById(userID)
-  .select("name userName profilePic gallery availability gender age address phone_number");
+    .select("name userName profilePic availability gender age phone_number address");
 
   if (!user)
     return res.status(400).json({ message: "There is no User with such ID " });
@@ -31,21 +32,21 @@ exports.getUserInfo = async (req, res, next) => {
     .select("title content rating _id ");
 
   const schedule = await Order
-  .find({serviceProviderId:userID, status:{$nin:['completed','canceled']}})
+    .find({ serviceProviderId: userID, status: { $nin: ['completed', 'canceled'] } })
 
-  
+
   //Changing Avaibility Of The Service Provider Into Busy If He/She 
- if(schedule){
-  let currentDate = new Date()
-  currentDate.setHours( currentDate.getHours() + 2 )
-  schedule.map(appointment=>{
-    if(currentDate>= appointment.startsAt && currentDate <=appointment.endsAt){
-      user.availability = 'busy'
-    }
-  })
- }
+  if (schedule) {
+    let currentDate = new Date()
+    currentDate.setHours(currentDate.getHours() + 2)
+    schedule.map(appointment => {
+      if (currentDate >= appointment.startsAt && currentDate <= appointment.endsAt) {
+        user.availability = 'busy'
+      }
+    })
+  }
 
-  res.status(200).json({ serviceProviderInfo: user, service: service , reviewsDetails: reviews});
+  res.status(200).json({ serviceProviderInfo: user, service: service, reviewsDetails: reviews });
 };
 //#endregion
 
@@ -69,9 +70,71 @@ exports.changeProfilePic = async (req, res, next) => {
 
 //#region update profile
 exports.updateProfile = async (req, res, next) => {
-  const userID = req.user._id;
-  const user = await User.updateOne(userID, req.body);
-  res.status(200).send(user);
+
+  if (!mongoose.isValidObjectId(req.params.userId))
+    return res.status(400).json({
+      message: 'The ID You Sent in URL is Invalid'
+    });
+
+
+  const { error } = validateEditProfile(req.body);
+  if (error)
+    return res.status(400).json({
+      message: error.details[0].message
+    });
+
+  try {
+
+    let user = await User.findById(req.user._id);
+
+    if (!user)
+      return res.status(400).json({
+        message: 'The User Not Found'
+      });
+
+    req.body = _.pick(req.body, [
+      'name',
+      'phone_number',
+      'address',
+      'serviceName',
+      'servicePrice',
+      'description'
+    ]);
+
+    if (user.role === 'serviceProvider') {
+
+      await Service.findByIdAndUpdate(user.serviceId,
+        { $set: req.body });
+    }
+
+    if (req.body.address) {
+      user.address = req.body.address;
+      await user.save();
+    }
+
+    user = await User.findByIdAndUpdate(user._id,
+      { $set: req.body },
+      { new: true });
+
+
+    res.status(200).json({
+      status: 'Success',
+      user: user
+    });
+
+  } catch (err) {
+    if (err.message === "Cannot read property 'longitude' of undefined" ||
+      err.message === "Cannot read property 'latitude' of undefined" ||
+      err.message === "Response status code is 400") {
+      return res.status(400).json({
+        message: "The Address You Entered Is Not Valid",
+      });
+    }
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
 };
 //#endregion
 
@@ -135,36 +198,36 @@ exports.addIntoGallery = async (req, res, next) => {
 };
 //#endregion
 
-exports.schedule = async (req, res)=>{
+exports.schedule = async (req, res) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
 
   const serviceProviderID = mongoose.Types.ObjectId(req.params.id);
 
   //Getting Service Provider
   const serviceProvider = await User
-  .findById(serviceProviderID)
-  .populate('serviceId','serviceName servicePrice averageRating numberOfRatings')
-  .select('name gender userName phone_number _id profilePic availability')
+    .findById(serviceProviderID)
+    .populate('serviceId', 'serviceName servicePrice averageRating numberOfRatings')
+    .select('name gender userName phone_number _id profilePic availability')
 
   //Getting The Schedule Of The Service Provider
   const schedule = await Order
-  .find({serviceProviderId:serviceProviderID, status:{$nin:['completed','canceled']}})
-  .select('orderDate startsAt endsAt notes')
-  if(!schedule)
-  return res.status(200).json({message: 'NO ORDERS IN THE SCHEDULE YET'});
+    .find({ serviceProviderId: serviceProviderID, status: { $nin: ['completed', 'canceled'] } })
+    .select('orderDate startsAt endsAt notes')
+  if (!schedule)
+    return res.status(200).json({ message: 'NO ORDERS IN THE SCHEDULE YET' });
 
   //Changing Avaibility Of The Service Provider Into Busy If He/She 
   let currentDate = new Date()
-  currentDate.setHours( currentDate.getHours() + 2 )
-  schedule.map(appointment=>{
-    if(currentDate>= appointment.startsAt && currentDate <=appointment.endsAt){
+  currentDate.setHours(currentDate.getHours() + 2)
+  schedule.map(appointment => {
+    if (currentDate >= appointment.startsAt && currentDate <= appointment.endsAt) {
       serviceProvider.availability = 'busy'
     }
   })
 
- return res.status(200).json({serviceProvider,schedule}); 
+  return res.status(200).json({ serviceProvider, schedule });
 }
 
-exports.editScheduleNotes = async (req, res)=>{
+exports.editScheduleNotes = async (req, res) => {
 
 }

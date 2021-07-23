@@ -36,18 +36,25 @@ const userSchema = new mongoose.Schema({
         type: Number,
         min: 16,
         max: 100,
-        required: true
+        required: function () {
+            return this.role !== 'admin'
+        }
     },
     gender: {
         type: String,
         trim: true,
-        required: true
+        required: function () {
+            return this.role !== 'admin'
+        }
     },
     nationalID: {
         type: String,
         minlength: 14,
         trim: true,
-        maxlength: 28
+        maxlength: 28,
+        required: function () {
+            return this.role !== 'admin'
+        }
     },
     profilePic: {
         type: String,
@@ -63,7 +70,9 @@ const userSchema = new mongoose.Schema({
     phone_number: {
         type: String,
         minlength: 11,
-        required: true
+        required: function () {
+            return this.role !== 'admin';
+        }
     },
     address: {
         type: String,
@@ -118,17 +127,20 @@ const userSchema = new mongoose.Schema({
                     type: String,
                     enum: ["android", "ios", "web"],
                     default: 'android',
-                    required: true,
+                    required: function () {
+                        return this.role !== 'admin';
+                    },
                 },
                 deviceToken: {
                     type: String,
-                    required: true,
+                    required: function () {
+                        return this.role !== 'admin';
+                    },
                 },
             },
             { _id: false }
         ),
     ],
-
 });
 
 
@@ -178,7 +190,6 @@ userSchema.pre('save', async function (next) {
     }
     next();
 });
-
 
 
 module.exports = mongoose.model('User', userSchema);;
