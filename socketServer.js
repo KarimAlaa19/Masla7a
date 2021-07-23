@@ -68,6 +68,7 @@ const socketServer = (server) => {
         await conversation.save();
 
         const emittedData = {
+          messageID: sentMessage._id,
           content: data.content,
           sender: senderID,
           type: data.type,
