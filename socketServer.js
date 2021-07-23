@@ -59,6 +59,7 @@ const socketServer = (server) => {
             user: senderID,
             content: data.content,
             attachment: data.attachment,
+            type: data.type,
             conversation: conversation._id,
           });
           await sentMessage.save();
@@ -66,11 +67,16 @@ const socketServer = (server) => {
           console.log(sentMessage._id)
         conversation.lastMessage = await sentMessage._id;
         await conversation.save();
+
+        const emittedData = {
+          content: data.content,
+          sender: senderID,
+          type: data.type,
+          createdAt: sentMessage.createdAt 
+        }
+        
         console.log("CHECK POINT WOOHOOO..");
-        nameSpace.to(`user ${data.to}`).emit("new message", {
-          conversation,
-          message: data,
-        });
+        nameSpace.to(`user ${data.to}`).emit("new-message", emittedData);
         
           // // Send Notification in-app
           const receiver = await User.findById(data.to)
