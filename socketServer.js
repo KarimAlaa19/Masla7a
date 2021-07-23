@@ -30,9 +30,8 @@ const socketServer = (server) => {
       await socket.join(`user ${senderID}`);
 
       socket.emit("hello",'Hello from rim, you have connected successfully')
-      socket.on("private", async (data, ack) => {
+      socket.on("private", async (data) => {
         
-        ack('We are at private')
         console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
