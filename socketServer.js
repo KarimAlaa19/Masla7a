@@ -15,7 +15,10 @@ const socketServer = (server) => {
       "connection",
       socketIOJwt.authorize({
         secret: config.get("jwtPrivateKey"),
-      })
+      }),
+      (socket)=>{
+      socket.emit('Hello from rim, you have connected successfully')
+      }
     );
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
@@ -24,6 +27,7 @@ const socketServer = (server) => {
       //console.log(socket);
       await socket.join(`user ${senderID}`);
 
+      socket.emit('Hello from rim, you have connected successfully')
       socket.on("private", async (data, ack) => {
         
         ack('We are at private')
