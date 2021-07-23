@@ -6,35 +6,44 @@ const mongoose = require('mongoose')
 
 exports.fetchAll = async (req, res, next) => {
   const conversations = await Conversation.find(
-    { users: req.user._id },
-    req.allowPagination,
-    {
-      sort: 'updatedAt',
-      populate: [{ path: "users", select: "name profilePic" }, "lastMessage"],
-    }
-  );
-  console.log(conversations)
-  res.status(200).send(conversations);
+    { users: req.user._id }
+  ).populate('users lastMessage','name profilePic availability user content createdAt')
+  .sort('-updatedAt')
+  .select('-createdAt -updatedAt')
+  res.status(200).json(conversations);
 }; 
 
 exports.fetchMessages = async (req, res, next) => {
-  if(req.params.id.length != 24 )
-  return res.status(404).send("Invalid ID");
-  
-  const conversationID = mongoose.Types.ObjectId(req.params.id)
+
+  if(req.body.id.length != 24 )
+  return res.status(404).json("Invalid ID");
+
+  const conversationID = mongoose.Types.ObjectId(req.body.id)
   const conversation = await Conversation.findById(conversationID);
-  console.log(conversation);
   if (!conversation)
-    return res.status(404).send("No conversation with such ID");
+    return res.status(404).json("No conversation with such ID");
 
   const messages = await Message.find(
-    req.allowPagination,
     {
       conversation: conversationID,
     }
   ).populate('user', 'name profilePic')
-  .select('content attachment')
+  .select('content attachment createdAt')
   .sort('-createdAt');
-  console.log(messages)
-  res.status(200).send(messages);
+
+  res.status(200).json(messages);
 };
+
+exports.deleteConversation = async(req, res, next)=>{
+  if (req.params.id.length != 24) return res.status(404).json("Invalid ID");
+
+  const conversationID = mongoose.Types.ObjectId(req.params.id);
+  const conversation = await Conversation.findById(conversationID);
+  
+  if(!conversation)
+  return res.status(400).json({message :'There Is No conversation With Such ID'});
+
+  
+ await conversation.remove();
+  res.status(200).json({message: 'Deleted Successfully'})
+}

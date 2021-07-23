@@ -10,7 +10,7 @@ const socketServer = (server) => {
   try {
     const io = socketIO(server);
 
-    const nameSpace = io.of("/chating");
+    const nameSpace = io.of("/chatting");
     nameSpace.on(
       "connection",
       socketIOJwt.authorize({
@@ -20,13 +20,13 @@ const socketServer = (server) => {
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
-      console.log(senderID);
+      //console.log(senderID);
       //console.log(socket);
-
       await socket.join(`user ${senderID}`);
 
-      socket.on("private", async (data) => {
-        console.log("We are at private event");
+      socket.on("private", async (data, ack) => {
+        
+        ack('We are at private')
         console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
@@ -36,14 +36,17 @@ const socketServer = (server) => {
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
         });
 
+        console.log(conversation)
         //Create a conversation if there isn't
         if (!conversation) {
+          console.log('hello we are at new conversation')
           conversation = await new Conversation({
             users: [senderID, data.to],
           });
+          console.log('We are converation condition')
           await conversation.save();
         }
-        console.log(conversation);
+        //console.log(conversation);
 
         //saving messages to the Database
               

@@ -9,6 +9,8 @@ const storage = multer.diskStorage({
     callback(null, file.originalname);
   },
 });
+module.exports = multer({ storage: storage}).any();
+
 // const fileFilter = (req, file, cb)=>{
 //   if(
 //     file.mimetype === 'images/png' ||
@@ -21,4 +23,3 @@ const storage = multer.diskStorage({
 //     cb(null,false);
 //   }
 // }
-module.exports = multer({ storage: storage}).any();

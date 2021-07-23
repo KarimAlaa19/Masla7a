@@ -41,7 +41,7 @@ app.use('/home', homeRoute);
 app.use('/accounts', authRouter);
 app.use('/orders', orderRouter);
 app.use('/my-profile', userProfile);
-app.use('/chating', conversationRouter);
+app.use('/chatting', conversationRouter);
 app.use('/categories', categoryRouter);
 app.use('/favourites', favouritesRouter);
 app.use('/notifications', notificationRouter)

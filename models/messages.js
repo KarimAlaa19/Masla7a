@@ -26,20 +26,20 @@ const messageSchema = new Schema({
   { timestamps: true }
 );
 
-messageSchema.set("toJSON", {
-    virtuals: true,
-    transform: function (document) {
-      return {
-        id: document.id,
-        content: document.content,
-        attachment: document.attachment,
-        user: document.user,
-        conversation: document.conversation,
-        createdAt: document.createdAt,
-        updatedAt: document.updatedAt,
-      };
-    },
-  });
+// messageSchema.set("toJSON", {
+//     virtuals: true,
+//     transform: function (document) {
+//       return {
+//         id: document.id,
+//         content: document.content,
+//         attachment: document.attachment,
+//         user: document.user,
+//         conversation: document.conversation,
+//         createdAt: document.createdAt,
+//         updatedAt: document.updatedAt,
+//       };
+//     },
+//   });
 
 messageSchema.plugin(pagination);
 

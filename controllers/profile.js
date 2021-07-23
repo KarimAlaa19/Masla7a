@@ -28,8 +28,8 @@ exports.getUserInfo = async (req, res, next) => {
     .populate("services")
     .select("serviceName servicePrice description gallery averageRating numberOfRatings");
   const reviews = await Review.find({ serviceID: service._id })
-    .populate("user", "name profilePic -_id")
-    .select("title content rating _id");
+    .populate("user", "name profilePic  -_id")
+    .select("title content rating _id ");
 
   const schedule = await Order
     .find({ serviceProviderId: userID, status: { $nin: ['completed', 'canceled'] } })
@@ -194,7 +194,7 @@ exports.addIntoGallery = async (req, res, next) => {
       }
     }
   }
-  res.status(200).json({ user: user });
+  res.status(200).json({ user, service });
 };
 //#endregion
 

@@ -1,3 +1,5 @@
+const Complaint = require('../models/complaint');
+const Validator = require('../validators/complaint-validator');
 const mongoose = require("mongoose");
 const _ = require("lodash");
 const User = require("../models/user-model");
@@ -92,3 +94,29 @@ exports.changeAvailability = async (req, res) => {
     });
   }
 };
+//#region Posting A Complaint
+exports.postComplaint = async (req, res)=>{
+  const complainant = req.user;
+  if(complainant.role !=='customer')
+  return res.status(401).json('This Section Is Only For Customers Complaints');
+
+  const {error} = await Validator.validateComplaint(req.body);
+  if(error) return res.status(400).json(error.details[0].message);
+
+  const serviceProvider = await User.findOne({userName: req.body.userName});
+  if(!serviceProvider) return res.status(400).json('There is no serviceprovider with such username');
+
+  const previousComplaint = await Complaint.findOne({serviceProvider:serviceProvider._id, user:complainant._id})
+  
+  if(previousComplaint)return res.status(400).json('You Have Already submited A compliant');
+
+  const complaint = new Complaint({
+    serviceProvider: serviceProvider._id,
+    user: complainant._id,
+    complaintType: req.body.complaintType,
+    description: req.body.description
+  });
+  await complaint.save();
+  return res.status(200).json({message:'Complaint Has Been Submited Successfully'});
+}
+//#endregion

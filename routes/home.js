@@ -1,6 +1,7 @@
 const express = require('express');
 const { homePage,
-    changeAvailability } = require('../controllers/home');
+    changeAvailability,
+    postComplaint } = require('../controllers/home');
 const { topServiceProviders,
     filterServices } = require('../controllers/serviceProvider-controller');
 const { extractingToken } = require('../controllers/user-auth');
@@ -17,5 +18,7 @@ router.get('/search', filterServices);
 
 router.get('/:id', homePage);
 
+//POST A Complaint PATH /home/complaint
+router.post('/complaint', extractingToken, postComplaint);
 
 module.exports = router;
