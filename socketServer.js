@@ -15,18 +15,22 @@ const socketServer = (server) => {
       "connection",
       socketIOJwt.authorize({
         secret: config.get("jwtPrivateKey"),
-      })
+      }),
+      (socket)=>{
+      socket.emit('Hello from rim, you have connected successfully')
+      }
     );
+
+
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
       const senderID = socket.decoded_token._id;
-      //console.log(senderID);
-      //console.log(socket);
+      
       await socket.join(`user ${senderID}`);
 
-      socket.on("private", async (data, ack) => {
+      socket.emit("hello",'Hello from rim, you have connected successfully')
+      socket.on("private", async (data) => {
         
-        ack('We are at private')
         console.log(data)
         if (!data.content && !data.attachment) return;
         const senderID = socket.decoded_token._id;
@@ -54,6 +58,7 @@ const socketServer = (server) => {
             user: senderID,
             content: data.content,
             attachment: data.attachment,
+            type: data.type,
             conversation: conversation._id,
           });
           await sentMessage.save();
@@ -61,11 +66,17 @@ const socketServer = (server) => {
           console.log(sentMessage._id)
         conversation.lastMessage = await sentMessage._id;
         await conversation.save();
+
+        const emittedData = {
+          messageID: sentMessage._id,
+          content: data.content,
+          sender: senderID,
+          type: data.type,
+          createdAt: sentMessage.createdAt 
+        }
+        
+        nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData)
         console.log("CHECK POINT WOOHOOO..");
-        nameSpace.to(`user ${data.to}`).emit("new message", {
-          conversation,
-          message: data,
-        });
         
           // // Send Notification in-app
           const receiver = await User.findById(data.to)

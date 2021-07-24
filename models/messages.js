@@ -12,6 +12,10 @@ const messageSchema = new Schema({
     attachment: {
       type: String,
     },
+    type:{
+      type:String,
+      enum:['text','image','submit form']
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", 
