@@ -68,11 +68,6 @@ exports.addingAdmin = async (req, res) => {
 
 exports.loginAdmin = async (req, res) => {
 
-    if (req.user.role !== 'admin')
-        return res.status(403).json({
-            message: 'Access Denied, Only Admins Can Access This'
-        });
-
     const { error } = validator.validateAdminLogIn(req.body);
 
     if (error)

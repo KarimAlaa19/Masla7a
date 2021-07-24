@@ -11,11 +11,13 @@ const { exportData } = require('../controllers/admin-controllers/admin-export-co
 const router = express.Router();
 
 
-router.use(extractingToken);
 
 
 //admin/control/admins
 router.use('/admins', adminAuthRouter);
+
+
+router.use(extractingToken);
 
 //admin user routes /admin/control/users
 router.use('/users', adminUserRouter)
