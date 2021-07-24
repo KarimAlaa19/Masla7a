@@ -117,7 +117,8 @@ const socketServer = (server) => {
           const order = await Order.findOne({
             serviceProviderId: serviceProviderID,
             customerId: customerID,
-          }).sort("-createdAt");
+          }).sort("-createdAt")
+          .select('-serviceProviderId -customerId -serviceId -notes -status ');
           if(!order)return
           emittedData = {order,role: sender.role};
         }
@@ -126,6 +127,7 @@ const socketServer = (server) => {
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
           .emit("new-message", emittedData);
+          console.log(emittedData)
         console.log("CHECK POINT WOOHOOO..");
 
         //#region  Send Notification
