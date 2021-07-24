@@ -2,6 +2,7 @@ const Joi = require('joi');
 
 exports.validateCreateOrder = (order) => {
     const schema = Joi.object({
+        customerId: Joi.string().min(24).required(),
         serviceName: Joi.string(),
         orderDate: Joi.date().required(),
         startsAt: Joi.date().required(),

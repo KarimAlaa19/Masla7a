@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const _ = require("lodash");
-const {Notification} = require("../models/notification");
+const { Notification } = require("../models/notification");
 const Order = require("../models/order-model");
 const Service = require("../models/service-model");
 const User = require('../models/user-model');
@@ -250,7 +250,8 @@ exports.createOrder = async (req, res) => {
       "serviceName",
       "price",
       "address",
-      "notes"
+      "notes",
+      "customerId"
     ]);
 
     req.body.serviceProviderId = serviceProvider._id;
@@ -304,21 +305,14 @@ exports.createOrder = async (req, res) => {
 
     req.body.serviceId = service._id;
 
-    const order = new Order(req.body);
+    const order = await Order.create(req.body);
+
+    service.ordersList.push(order._id);
+
+    await service.save();
 
     res.status(201).json({
-      orderInfo: _.pick(order, [
-        "serviceProviderId",
-        "serviceId",
-        "serviceName",
-        "orderDate",
-        "startsAt",
-        "endsAt",
-        "price",
-        "address",
-        "status",
-        "notes"
-      ]),
+      orderInfo: order
     });
   } catch (err) {
 
@@ -336,10 +330,11 @@ exports.createOrder = async (req, res) => {
 };
 
 
-exports.confirmOrder = async (req, res, next) => {
+exports.discardOrder = async (req, res, next) => {
   try {
 
     const customer = await User.findById(req.user._id);
+
 
     if (!customer)
       return res.status(404).json({
@@ -347,31 +342,50 @@ exports.confirmOrder = async (req, res, next) => {
         message: 'The Customer Not Found'
       });
 
-    req.body = _.pick(req.body, [
-      "serviceProviderId",
-      "serviceId",
-      "serviceName",
-      "orderDate",
-      "startsAt",
-      "endsAt",
-      "price",
-      "address",
-      "status",
-      "notes"
-    ]);
 
-    req.body.customerId = customer._id;
+    console.log(req.params.orderId)
+    const order = await Order.findById(req.params.orderId);
+    console.log(order)
 
-    const service = await Service.findById(req.body.serviceId)
+    if (!order)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The Order Not Found'
+      });
 
-    const order = await Order.create(req.body);
 
-    service.ordersList.push(order._id);
+    // if (customer._id != order.customerId)
+    //   return res.status(401).json({
+    //     status: 'Failed',
+    //     message: 'Access Denied, You Cant Discard This Order.'
+    //   });
+
+
+    const service = await Service.findById(order.serviceId);
+
+    if (!service)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The Service Not Found'
+      });
+
+    const index = service.ordersList.indexOf(order._id);
+
+    if (index === -1)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The Order Not Found in The Service'
+      });
+
+    service.ordersList.splice(index, 1);
+
+    await Order.findByIdAndDelete(order._id);
 
     await service.save();
 
-    res.status(201).json({
-      orderInfo: order
+    res.status(200).json({
+      status: 'Success',
+      message: 'Order Deleted Successfully.'
     });
   } catch (err) {
     res.status(500).json({
@@ -418,19 +432,19 @@ exports.canceleOrder = async (req, res) => {
       message: 'Order Canceled Successfully'
     });
 
-     //Saving in-app notification for the request
-     const notification = await new Notification({
+    //Saving in-app notification for the request
+    const notification = await new Notification({
       title: "Order Has Been Cancelled",
       body: `User ${order.customerId} Cancelled the order`,
       senderUser: order.customerId,
-      targetUsers:  order.serviceProviderId,
+      targetUsers: order.serviceProviderId,
       subjectType: "Order",
       subject: order._id,
     })
     await notification.save();
 
-  //push firebase notification
-  await serviceProvider.user_send_notification(
+    //push firebase notification
+    await serviceProvider.user_send_notification(
       notification.toFirebaseNotification()
     );
 
@@ -440,3 +454,171 @@ exports.canceleOrder = async (req, res) => {
     });
   }
 };
+
+{
+  // exports.createOrder = async (req, res) => {
+  //   const { error } = validateCreateOrder(req.body);
+  //   if (error)
+  //     return res.status(400).json({ errorMessage: error.details[0].message });
+
+  //   try {
+
+  //     if (!mongoose.isValidObjectId(req.user._id)) {
+  //       return res.status(401).json({
+  //         message: "Access Denied"
+  //       });
+  //     }
+
+  //     const serviceProvider = await User.findById(req.user._id);
+
+  //     if (!serviceProvider)
+  //       return res.status(404).json({
+  //         status: 'Failed',
+  //         message: 'The Service Provider Not Found'
+  //       });
+
+
+  //     if (serviceProvider.role !== 'serviceProvider') {
+  //       return res.status(401).json({
+  //         message: 'Access Denied, Only Service Providers Can Access'
+  //       });
+  //     }
+
+  //     req.body = _.pick(req.body, [
+  //       "orderDate",
+  //       "startsAt",
+  //       "endsAt",
+  //       "serviceName",
+  //       "price",
+  //       "address",
+  //       "notes"
+  //     ]);
+
+  //     req.body.serviceProviderId = serviceProvider._id;
+
+
+
+  //     if ((new Date(req.body.startsAt) <= Date.now()) || (new Date(req.body.endsAt) <= Date.now))
+  //       return res.status(400).json({
+  //         message: 'you can\'t set your order date to a past date'
+  //       });
+
+  //     if (req.body.startsAt >= req.body.endsAt)
+  //       return res.status(400).json({
+  //         message: 'The Time To Start The Order Is Earlier Than The Time To End It'
+  //       });
+
+
+  //     const service = await Service.findOne({
+  //       serviceProviderId: req.body.serviceProviderId,
+  //     });
+
+  //     if (!service)
+  //       return res.status(400).json({
+  //         message: 'Couldn\'t Find This Service Provider '
+  //       });
+
+  //     const checkSPOrders = await Order.findOne({
+  //       serviceProviderId: req.body.serviceProviderId,
+  //       status: { $ne: 'canceled' },
+  //       orderDate: req.body.orderDate,
+  //       $or: [
+  //         {
+  //           startsAt: {
+  //             $gte: req.body.startsAt,
+  //             $lte: req.body.endsAt,
+  //           },
+  //         },
+  //         {
+  //           endsAt: {
+  //             $gte: req.body.startsAt,
+  //             $lte: req.body.endsAt,
+  //           },
+  //         },
+  //       ],
+  //     });
+
+  //     if (checkSPOrders)
+  //       return res.status(400).json({
+  //         message: "You Have Order At This Time",
+  //       });
+
+  //     req.body.serviceId = service._id;
+
+  //     const order = new Order(req.body);
+
+  //     res.status(201).json({
+  //       orderInfo: _.pick(order, [
+  //         "serviceProviderId",
+  //         "serviceId",
+  //         "serviceName",
+  //         "orderDate",
+  //         "startsAt",
+  //         "endsAt",
+  //         "price",
+  //         "address",
+  //         "status",
+  //         "notes"
+  //       ]),
+  //     });
+  //   } catch (err) {
+
+  //     if (err.message === "Cannot read property 'longitude' of undefined" ||
+  //       err.message === "Cannot read property 'latitude' of undefined" ||
+  //       err.message === "Response status code is 400")
+  //       return res.status(400).json({
+  //         message: "The Address You Entered Is Not Valid",
+  //       });
+
+  //     res.status(500).json({
+  //       message: err.message,
+  //     });
+  //   }
+  // };
+
+
+  // exports.confirmOrder = async (req, res, next) => {
+  //   try {
+
+  //     const customer = await User.findById(req.user._id);
+
+  //     if (!customer)
+  //       return res.status(404).json({
+  //         status: 'Failed',
+  //         message: 'The Customer Not Found'
+  //       });
+
+  //     req.body = _.pick(req.body, [
+  //       "serviceProviderId",
+  //       "serviceId",
+  //       "serviceName",
+  //       "orderDate",
+  //       "startsAt",
+  //       "endsAt",
+  //       "price",
+  //       "address",
+  //       "status",
+  //       "notes"
+  //     ]);
+
+  //     req.body.customerId = customer._id;
+
+  //     const service = await Service.findById(req.body.serviceId)
+
+  //     const order = await Order.create(req.body);
+
+  //     service.ordersList.push(order._id);
+
+  //     await service.save();
+
+  //     res.status(201).json({
+  //       orderInfo: order
+  //     });
+  //   } catch (err) {
+  //     res.status(500).json({
+  //       message: err.message
+  //     })
+  //   }
+  // };
+
+}
