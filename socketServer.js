@@ -4,12 +4,16 @@ const { Conversation } = require("./models/conversation");
 const {Notification} = require('./models/notification');
 const Message = require("./models/messages").Message;
 const User = require("./models/user-model");
+const multerconfig = require('./images/images-controller/multer');
+const cloud = require("./images/images-controller/cloudinary");
 const config = require("config");
+const fs = require('fs')
 
 const socketServer = (server) => {
   try {
     const io = socketIO(server);
-
+ 
+    //#region socket nameSpace and Athenticating
     const nameSpace = io.of("/chatting");
     nameSpace.on(
       "connection",
@@ -20,40 +24,40 @@ const socketServer = (server) => {
       socket.emit('Hello from rim, you have connected successfully')
       }
     );
+    //#endregion
 
-
+    //Authenticate event
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
-      const senderID = socket.decoded_token._id;
       
+      //#region Extracting sender id and joining a room
+      const senderID = socket.decoded_token._id;
       await socket.join(`user ${senderID}`);
-
       socket.emit("hello",'Hello from rim, you have connected successfully')
+      //#endregion
+     
+    //Private event
       socket.on("private", async (data) => {
-        
         console.log(data)
-        if (!data.content && !data.attachment) return;
+        if (!data.content && !data.attachment && !data.type) return;
+        
+        //#region Return conversation if there is and create one if there isn't 
         const senderID = socket.decoded_token._id;
-
         console.log('hello')
         let conversation = await Conversation.findOne({
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
         });
 
-        console.log(conversation)
         //Create a conversation if there isn't
         if (!conversation) {
-          console.log('hello we are at new conversation')
           conversation = await new Conversation({
             users: [senderID, data.to],
           });
-          console.log('We are converation condition')
           await conversation.save();
         }
-        //console.log(conversation);
-
-        //saving messages to the Database
-              
+        //#endregion
+        
+        //#region saving messages to the Database
         let sentMessage = await new Message({
             user: senderID,
             content: data.content,
@@ -67,18 +71,35 @@ const socketServer = (server) => {
         conversation.lastMessage = await sentMessage._id;
         await conversation.save();
 
-        const emittedData = {
+        //Recieving files
+        socket.on("files",multerconfig, async (req,res)=>{
+          if (req.files) {
+            if (req.files[i].fieldname === "image") {
+              const result = await cloud.uploads(req.files[i].path);
+              sentMessage.attachment = result.url;
+              fs.unlinkSync(req.files[i].path);
+              await sentMessage.save();
+              // user.profilePic = result.url;
+              res.status(200).json('Successfully uploaded an image');
+            }
+          }
+        })
+      //#endregion
+       
+      //#region Emitted data to client-side
+      const emittedData = {
           messageID: sentMessage._id,
           content: data.content,
           sender: senderID,
           type: data.type,
           createdAt: sentMessage.createdAt 
         }
-        
         nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData)
         console.log("CHECK POINT WOOHOOO..");
-        
-          // // Send Notification in-app
+        //#endregion
+
+        //#region  Send Notification 
+        //in-app Notification
           const receiver = await User.findById(data.to)
           const notification = await new Notification({
             title: "New Message",
@@ -91,7 +112,7 @@ const socketServer = (server) => {
 
           // push notifications
           await receiver.user_send_notification(notification.toFirebaseNotification());
-        
+        //#endregion
       });
     });
     return io;
