@@ -92,10 +92,10 @@ exports.loginAdmin = async (req, res) => {
             });
 
         const token = jwt.sign({
-            _id: this._id,
-            email: this.email,
-            userName: this.userName,
-            role: this.role
+            _id: user._id,
+            email: user.email,
+            userName: user.userName,
+            role: user.role
         }, config.get('jwtPrivateKey'));
 
         res.status(200).json({
