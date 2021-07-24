@@ -62,9 +62,10 @@ const socketServer = (server) => {
         console.log(typeof senderID);
         const sender = await User.findById(mongoose.Types.ObjectId(senderID));
         let emittedData;
+        let sentMessage
         if (data.type !== "order") {
           //#region saving messages to the Database
-          let sentMessage = await new Message({
+           sentMessage = await new Message({
             user: senderID,
             content: data.content,
             attachment: data.attachment,
@@ -128,8 +129,7 @@ const socketServer = (server) => {
           .to(`user ${senderID}`)
           .emit("new-message", emittedData);
           console.log(emittedData)
-        console.log("CHECK POINT WOOHOOO..");
-
+       
         //#region  Send Notification
         //in-app Notification
         const receiver = await User.findById(data.to);
@@ -147,6 +147,8 @@ const socketServer = (server) => {
           notification.toFirebaseNotification()
         );
         //#endregion
+        console.log("CHECK POINT WOOHOOO..");
+
       });
       socket.on('decline', async (data)=>{
         if(!data.to){

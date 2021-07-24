@@ -6,8 +6,12 @@ const mongoose = require('mongoose')
 
 exports.fetchAll = async (req, res, next) => {
   const conversations = await Conversation.find(
-    { users: req.user._id }
-  ).populate('users lastMessage','name profilePic role availability user content createdAt')
+    { users: req.user._id, lastMessage:{$nin:null} },
+    // {
+    //   populate:[{path:'users',select:'name profilePic role availability'},'lastMessage']
+    // }
+  )
+  .populate('users lastMessage','name profilePic role availability user content createdAt')
   .sort('-updatedAt')
   .select('-createdAt -updatedAt')
   res.status(200).json(conversations);
