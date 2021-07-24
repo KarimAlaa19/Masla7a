@@ -164,7 +164,7 @@ const socketServer = (server) => {
           }
           console.log(serviceProviderID);
           console.log(customerID);
-        const order = await Order.findOneAndRemove({serviceProviderId: serviceProviderID,customerId: customerID});
+        const order = await Order.findOneAndRemove({serviceProviderId: serviceProviderID,customerId: customerID, status:'pending'}).sort('-createdAt');
       })
     });
     return io;
