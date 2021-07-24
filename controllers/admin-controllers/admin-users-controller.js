@@ -290,6 +290,14 @@ exports.getAllCustomers = async (req, res) => {
             message: 'Access Denied, Only Admins Can Access This'
         });
 
+    let queryData = {
+        'location.city': !req.query.city ?
+            undefined : new RegExp(`.*${req.query.city}.*`, 'i'),
+        role: 'customer'
+    };
+
+    cleanObj(queryData);
+
     try {
 
         const orders = await Order
@@ -308,9 +316,7 @@ exports.getAllCustomers = async (req, res) => {
         let customers = await User
             .aggregate([
                 {
-                    $match: {
-                        role: 'customer'
-                    }
+                    $match: queryData
                 },
                 {
                     $set: {
@@ -691,6 +697,14 @@ exports.getAllServiceProviders = async (req, res) => {
             message: 'Access Denied, Only Admins Can Access This'
         });
 
+    let queryData = {
+        'serviceProvider.location.city': !req.query.city ?
+            undefined : new RegExp(`.*${req.query.city}.*`, 'i'),
+    };
+
+    cleanObj(queryData);
+
+
     try {
 
         let serviceProviders = await Service
@@ -702,6 +716,9 @@ exports.getAllServiceProviders = async (req, res) => {
                         foreignField: '_id',
                         as: 'serviceProvider'
                     }
+                },
+                {
+                    $match: queryData
                 },
                 {
                     $set: {

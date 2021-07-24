@@ -95,20 +95,30 @@ exports.changeAvailability = async (req, res) => {
   }
 };
 //#region Posting A Complaint
-exports.postComplaint = async (req, res)=>{
+exports.postComplaint = async (req, res) => {
+
   const complainant = req.user;
-  if(complainant.role !=='customer')
-  return res.status(401).json('This Section Is Only For Customers Complaints');
+  if (complainant.role !== 'customer')
+    return res.status(401).json('This Section Is Only For Customers Complaints');
 
-  const {error} = await Validator.validateComplaint(req.body);
-  if(error) return res.status(400).json(error.details[0].message);
+  const { error } = await Validator.validateComplaint(req.body);
 
-  const serviceProvider = await User.findOne({userName: req.body.userName});
-  if(!serviceProvider) return res.status(400).json('There is no serviceprovider with such username');
+  if (error)
+    return res.status(400).json(error.details[0].message);
 
-  const previousComplaint = await Complaint.findOne({serviceProvider:serviceProvider._id, user:complainant._id})
-  
-  if(previousComplaint)return res.status(400).json('You Have Already submited A compliant');
+  const serviceProvider = await User
+    .findOne({ userName: new RegExp(`.*${req.body.userName}.*`, 'i') });
+
+
+  if (!serviceProvider)
+    return res.status(400).json('There is no serviceprovider with such username');
+    
+
+  const previousComplaint = await Complaint
+    .findOne({ serviceProvider: serviceProvider._id, user: complainant._id })
+
+  if (previousComplaint)
+    return res.status(400).json('You Have Already submited A compliant');
 
   const complaint = new Complaint({
     serviceProvider: serviceProvider._id,
@@ -117,6 +127,6 @@ exports.postComplaint = async (req, res)=>{
     description: req.body.description
   });
   await complaint.save();
-  return res.status(200).json({message:'Complaint Has Been Submited Successfully'});
+  return res.status(200).json({ message: 'Complaint Has Been Submited Successfully' });
 }
 //#endregion
