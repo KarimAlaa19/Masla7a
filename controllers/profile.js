@@ -15,7 +15,7 @@ const { validateEditProfile } = require('../validators/user-validator');
 
 //#region Getting profile information
 exports.getUserInfo = async (req, res, next) => {
-  if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
+  if (req.params.id.length != 24) return res.status(404).json("Invalid ID");
 
   const userID = mongoose.Types.ObjectId(req.params.id);
   const user = await User.findById(userID)

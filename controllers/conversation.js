@@ -43,7 +43,13 @@ exports.deleteConversation = async(req, res, next)=>{
   if(!conversation)
   return res.status(400).json({message :'There Is No conversation With Such ID'});
 
+  const messages = await Message.find({conversation:conversationID});
+  messages.map(message=>{
+    message.remove()
+  })
+  //service, price, data //tare5 l order,startTime, endTime, notes,  
+  console.log(messages)
+  await conversation.remove();
   
- await conversation.remove();
   res.status(200).json({message: 'Deleted Successfully'})
 }

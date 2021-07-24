@@ -14,7 +14,7 @@ const messageSchema = new Schema({
     },
     type:{
       type:String,
-      enum:['text','image','submit form']
+      enum:['text','image','order']
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -29,21 +29,6 @@ const messageSchema = new Schema({
   },
   { timestamps: true }
 );
-
-// messageSchema.set("toJSON", {
-//     virtuals: true,
-//     transform: function (document) {
-//       return {
-//         id: document.id,
-//         content: document.content,
-//         attachment: document.attachment,
-//         user: document.user,
-//         conversation: document.conversation,
-//         createdAt: document.createdAt,
-//         updatedAt: document.updatedAt,
-//       };
-//     },
-//   });
 
 messageSchema.plugin(pagination);
 

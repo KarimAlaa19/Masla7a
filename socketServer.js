@@ -1,18 +1,20 @@
 const socketIO = require("socket.io");
 const socketIOJwt = require("socketio-jwt");
+const mongoose = require("mongoose");
 const { Conversation } = require("./models/conversation");
-const {Notification} = require('./models/notification');
+const { Notification } = require("./models/notification");
 const Message = require("./models/messages").Message;
 const User = require("./models/user-model");
-const multerconfig = require('./images/images-controller/multer');
+const Order = require("./models/order-model");
+const multerconfig = require("./images/images-controller/multer");
 const cloud = require("./images/images-controller/cloudinary");
 const config = require("config");
-const fs = require('fs')
+const fs = require("fs");
 
 const socketServer = (server) => {
   try {
     const io = socketIO(server);
- 
+
     //#region socket nameSpace and Athenticating
     const nameSpace = io.of("/chatting");
     nameSpace.on(
@@ -20,8 +22,8 @@ const socketServer = (server) => {
       socketIOJwt.authorize({
         secret: config.get("jwtPrivateKey"),
       }),
-      (socket)=>{
-      socket.emit('Hello from rim, you have connected successfully')
+      (socket) => {
+        socket.emit("Hello from rim, you have connected successfully");
       }
     );
     //#endregion
@@ -29,21 +31,21 @@ const socketServer = (server) => {
     //Authenticate event
     nameSpace.on("authenticated", async (socket) => {
       console.log("successfuly authenticated");
-      
+
       //#region Extracting sender id and joining a room
       const senderID = socket.decoded_token._id;
       await socket.join(`user ${senderID}`);
-      socket.emit("hello",'Hello from rim, you have connected successfully')
+      socket.emit("hello", "Hello from rim, you have connected successfully");
       //#endregion
-     
-    //Private event
+
+      //Private event
       socket.on("private", async (data) => {
-        console.log(data)
+        console.log(data);
         if (!data.content && !data.attachment && !data.type) return;
-        
-        //#region Return conversation if there is and create one if there isn't 
         const senderID = socket.decoded_token._id;
-        console.log('hello')
+
+        //#region Return conversation if there is and create one if there isn't
+        console.log("hello");
         let conversation = await Conversation.findOne({
           $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
         });
@@ -56,9 +58,13 @@ const socketServer = (server) => {
           await conversation.save();
         }
         //#endregion
-        
-        //#region saving messages to the Database
-        let sentMessage = await new Message({
+
+        console.log(typeof senderID);
+        const sender = await User.findById(mongoose.Types.ObjectId(senderID));
+        let emittedData;
+        if (data.type !== "order") {
+          //#region saving messages to the Database
+          let sentMessage = await new Message({
             user: senderID,
             content: data.content,
             attachment: data.attachment,
@@ -66,52 +72,73 @@ const socketServer = (server) => {
             conversation: conversation._id,
           });
           await sentMessage.save();
-        
-          console.log(sentMessage._id)
-        conversation.lastMessage = await sentMessage._id;
-        await conversation.save();
 
-        //Recieving files
-        socket.on("files",multerconfig, async (req,res)=>{
-          if (req.files) {
-            if (req.files[i].fieldname === "image") {
-              const result = await cloud.uploads(req.files[i].path);
-              sentMessage.attachment = result.url;
-              fs.unlinkSync(req.files[i].path);
-              await sentMessage.save();
-              // user.profilePic = result.url;
-              res.status(200).json('Successfully uploaded an image');
+          console.log(sentMessage._id);
+          conversation.lastMessage = await sentMessage._id;
+          await conversation.save();
+
+          //Recieving files
+          socket.on("files", multerconfig, async (req, res) => {
+            if (req.files) {
+              if (req.files[i].fieldname === "image") {
+                const result = await cloud.uploads(req.files[i].path);
+                sentMessage.attachment = result.url;
+                fs.unlinkSync(req.files[i].path);
+                await sentMessage.save();
+                // user.profilePic = result.url;
+                res.status(200).json("Successfully uploaded an image");
+              }
             }
+          });
+          //#endregion
+
+          emittedData = {
+            messageID: sentMessage._id,
+            content: data.content,
+            sender: senderID,
+            type: data.type,
+            createdAt: sentMessage.createdAt,
+            role: sender.role,
+          };
+        } else {
+          let serviceProviderID;
+          let customerID;
+          if (sender.role === "serviceProvider") {
+            serviceProviderID = sender._id;
+            customerID = data.to;
+          } else {
+            serviceProviderID = data.to;
+            customerID = sender._id;
           }
-        })
-      //#endregion
-       
-      //#region Emitted data to client-side
-      const emittedData = {
-          messageID: sentMessage._id,
-          content: data.content,
-          sender: senderID,
-          type: data.type,
-          createdAt: sentMessage.createdAt 
+          const order = await Order.findOne({
+            serviceProviderId: serviceProviderID,
+            customerId: customerID,
+          }).sort("-createdAt");
+          if(!order)return
+          emittedData = {order,role: sender.role};
         }
-        nameSpace.to(`user ${data.to}`).to(`user ${senderID}`).emit("new-message", emittedData)
+        nameSpace
+          .to(`user ${data.to}`)
+          .to(`user ${senderID}`)
+          .emit("new-message", emittedData);
         console.log("CHECK POINT WOOHOOO..");
-        //#endregion
 
-        //#region  Send Notification 
+        //#region  Send Notification
         //in-app Notification
-          const receiver = await User.findById(data.to)
-          const notification = await new Notification({
-            title: "New Message",
-            body: data.content,
-            senderUser: senderID,
-            targetUsers:  data.to,
-            subjectType: "Message",
-            subject: sentMessage._id,
-          }).save();
+        const receiver = await User.findById(data.to);
+        const notification = await new Notification({
+          title: "New Message",
+          body: data.content,
+          senderUser: senderID,
+          targetUsers: data.to,
+          subjectType: "Message",
+          subject: sentMessage._id,
+        }).save();
 
-          // push notifications
-          await receiver.user_send_notification(notification.toFirebaseNotification());
+        // push notifications
+        await receiver.user_send_notification(
+          notification.toFirebaseNotification()
+        );
         //#endregion
       });
     });
