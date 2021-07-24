@@ -90,7 +90,6 @@ const socketServer = (server) => {
               }
             }
           });
-          //#endregion
 
           emittedData = {
             messageID: sentMessage._id,
@@ -100,7 +99,12 @@ const socketServer = (server) => {
             createdAt: sentMessage.createdAt,
             role: sender.role,
           };
-        } else {
+
+        }
+        //#endregion 
+        
+        //#region Emmitting order data for forms
+        else {
           let serviceProviderID;
           let customerID;
           if (sender.role === "serviceProvider") {
@@ -113,14 +117,17 @@ const socketServer = (server) => {
           const order = await Order.findOne({
             serviceProviderId: serviceProviderID,
             customerId: customerID,
-          }).sort("-createdAt");
+          }).sort("-createdAt")
+          .select('-serviceProviderId -customerId -serviceId -notes -status ');
           if(!order)return
           emittedData = {order,role: sender.role};
         }
+        //#endregion
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
           .emit("new-message", emittedData);
+          console.log(emittedData)
         console.log("CHECK POINT WOOHOOO..");
 
         //#region  Send Notification
@@ -141,6 +148,26 @@ const socketServer = (server) => {
         );
         //#endregion
       });
+      socket.on('decline', async (data)=>{
+        if(!data.to){
+          console.log('Receiver ID Should be sent');
+          return
+        }
+        const senderID = socket.decoded_token._id;
+        const sender = await User.findById(mongoose.Types.ObjectId(senderID));
+        let serviceProviderID;
+          let customerID;
+          if (sender.role === "serviceProvider") {
+            serviceProviderID = sender._id;
+            customerID = data.to;
+          } else {
+            serviceProviderID =data.to;
+            customerID = sender._id;
+          }
+          console.log(serviceProviderID);
+          console.log(customerID);
+        const order = await Order.findOneAndRemove({serviceProviderId: serviceProviderID,customerId: customerID, status:'pending'}).sort('-createdAt');
+      })
     });
     return io;
   } catch (error) {
