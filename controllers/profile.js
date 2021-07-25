@@ -11,7 +11,6 @@ const bcrypt = require("bcrypt");
 const _ = require("lodash");
 const cloud = require("../images/images-controller/cloudinary");
 const fs = require("fs");
-const { validateEditProfile } = require('../validators/user-validator');
 
 //#region Getting profile information
 exports.getUserInfo = async (req, res, next) => {
@@ -51,33 +50,29 @@ exports.getUserInfo = async (req, res, next) => {
 //#endregion
 
 //#region change profile picture
-exports.changeProfilePic = async (req, res, next) => {
-  const userID = req.user._id;
-  const user = await User.findById(userID);
-  if (req.files) {
-    for (var i = 0; i < req.files.length; i++) {
-      if (req.files[i].fieldname === "profilePic") {
-        const result = await cloud.uploads(req.files[i].path);
-        user.profilePic = result.url;
-        fs.unlinkSync(req.files[i].path);
-        await user.save();
-      }
-    }
-  }
-  res.status(200).json({ user: user });
-};
+// exports.changeProfilePic = async (req, res, next) => {
+//   const userID = req.user._id;
+//   const user = await User.findById(userID);
+//   if (req.files) {
+//     for (var i = 0; i < req.files.length; i++) {
+//       if (req.files[i].fieldname === "profilePic") {
+//         const result = await cloud.uploads(req.files[i].path);
+//         user.profilePic = result.url;
+//         fs.unlinkSync(req.files[i].path);
+//         await user.save();
+//       }
+//     }
+//   }
+//   res.status(200).json({ user: user });
+// };
 //#endregion
 
+
+
 //#region update profile
-exports.updateProfile = async (req, res, next) => {
+exports.editProfile = async (req, res, next) => {
 
-  if (!mongoose.isValidObjectId(req.params.userId))
-    return res.status(400).json({
-      message: 'The ID You Sent in URL is Invalid'
-    });
-
-
-  const { error } = validateEditProfile(req.body);
+  const { error } = validator.validateEditProfile(req.body);
   if (error)
     return res.status(400).json({
       message: error.details[0].message
@@ -92,24 +87,35 @@ exports.updateProfile = async (req, res, next) => {
         message: 'The User Not Found'
       });
 
+
+    if (req.body.birthDate)
+      req.body.age =
+        new Date().getFullYear() - new Date(req.body.birthDate).getFullYear();
+
+
     req.body = _.pick(req.body, [
       'name',
       'phone_number',
       'address',
-      'serviceName',
-      'servicePrice',
-      'description'
+      'age',
+      'gender'
     ]);
 
-    if (user.role === 'serviceProvider') {
-
-      await Service.findByIdAndUpdate(user.serviceId,
-        { $set: req.body });
-    }
 
     if (req.body.address) {
       user.address = req.body.address;
       await user.save();
+    }
+
+    if (req.files) {
+      for (var i = 0; i < req.files.length; i++) {
+        if (req.files[i].fieldname === "profilePic") {
+          const result = await cloud.uploads(req.files[i].path);
+          user.profilePic = result.url;
+          fs.unlinkSync(req.files[i].path);
+          await user.save();
+        }
+      }
     }
 
     user = await User.findByIdAndUpdate(user._id,
@@ -138,46 +144,189 @@ exports.updateProfile = async (req, res, next) => {
 };
 //#endregion
 
-//#region reset password
-exports.resetPassword = async (req, res, next) => {
-  const userID = req.user._id;
-  const user = await User.findById(userID);
 
-  const { error } = validator.validateResetPassword(req.body);
-  if (error) return res.status(400).json({ message: error.details[0].message });
+//#region update service data
+exports.editServiceData = async (req, res, next) => {
 
-  let validPassword = await bcrypt.compare(
-    req.body.current_password,
-    user.password
-  );
-  if (!validPassword)
-    return res.status(400).json({ message: "Invalid password" });
+  const { error } = validator.validateEditProfile(req.body);
+  if (error)
+    return res.status(400).json({
+      message: error.details[0].message
+    });
 
-  let checkNewPassword = await bcrypt.compare(
-    req.body.new_password,
-    user.password
-  );
-  if (checkNewPassword)
-    return res
-      .status(400)
-      .json({
-        message:
-          "This new password is the same as your current password, Please change it",
+  try {
+
+    let user = await User.findById(req.user._id);
+
+    if (!user)
+      return res.status(400).json({
+        message: 'The User Not Found'
       });
 
-  if (req.body.new_password != req.body.confirm_password)
-    return res
-      .status(400)
-      .json({ message: "Confirm Password doesnt match new password" });
 
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(req.body.new_password, salt);
-  await user.save();
-  res
-    .status(200)
-    .json({ message: "You have successfully changed your password" });
+    req.body = _.pick(req.body, [
+      'serviceName',
+      'servicePrice',
+      'description',
+    ]);
+
+    if (user.role !== 'serviceProvider')
+      return res.status(401).json({
+        status: 'Failed',
+        message: 'Access Denied, Only Service Providers Can Access This Page.'
+      })
+
+
+    await Service.findByIdAndUpdate(user.serviceId,
+      { $set: req.body });
+
+
+    res.status(200).json({
+      status: 'Success',
+      message: 'The Service Updated Successfully.'
+    });
+
+  } catch (err) {
+    if (err.message === "Cannot read property 'longitude' of undefined" ||
+      err.message === "Cannot read property 'latitude' of undefined" ||
+      err.message === "Response status code is 400") {
+      return res.status(400).json({
+        message: "The Address You Entered Is Not Valid",
+      });
+    }
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
 };
 //#endregion
+
+
+//#region change email
+exports.changeEmail = async (req, res, next) => {
+
+  const { error } = validator.validateChangeEmail(req.body);
+  if (error)
+    return res.status(400).json({
+      message: error.details[0].message
+    });
+
+  try {
+
+    let user = await User.findById(req.user._id);
+
+    if (!user)
+      return res.status(400).json({
+        message: 'The User Not Found'
+      });
+
+    req.body = _.pick(req.body, [
+      'email',
+      'password',
+    ]);
+
+
+    if (user.email === req.body.email)
+      return res.status(400).json({
+        status: 'Failed',
+        message: 'You Can not Set Your Old Email as Your New Email.'
+      });
+
+
+    const checkPassword =
+      await bcrypt.compare(req.body.password, user.password);
+
+
+    if (!checkPassword)
+      return res.status(400).json({
+        status: 'Failed',
+        message: 'The Password is Incorrect.'
+      });
+
+    user.email = req.body.email;
+
+    await user.save();
+
+    res.status(200).json({
+      status: 'Success',
+      message: 'The Email Changed Successfully.',
+    });
+
+  } catch (err) {
+    if (err.message === "Cannot read property 'longitude' of undefined" ||
+      err.message === "Cannot read property 'latitude' of undefined" ||
+      err.message === "Response status code is 400") {
+      return res.status(400).json({
+        message: "The Address You Entered Is Not Valid",
+      });
+    }
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+//#endregion
+
+
+//#region reset password
+exports.resetPassword = async (req, res, next) => {
+
+  try {
+
+
+    const { error } = validator.validateResetPassword(req.body);
+    if (error) return res.status(400).json({ message: error.details[0].message });
+
+
+    const user = await User.findById(req.user._id);
+
+    if (!user)
+      return res.status(400).json({
+        message: 'The User Was Not Found.'
+      });
+
+
+    let validPassword = await bcrypt.compare(
+      req.body.current_password,
+      user.password
+    );
+
+
+    if (!validPassword)
+      return res.status(400).json({ message: "Invalid password" });
+
+    let checkNewPassword = await bcrypt.compare(
+      req.body.new_password,
+      user.password
+    );
+    if (checkNewPassword)
+      return res
+        .status(400)
+        .json({
+          message:
+            "This new password is the same as your current password, Please change it",
+        });
+
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(req.body.new_password, salt);
+    await user.save();
+    res
+      .status(201)
+      .json({ message: "You have successfully changed your password" });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    })
+  }
+};
+//#endregion
+
+
+
 
 //#region Add photos in the gallery
 exports.addIntoGallery = async (req, res, next) => {

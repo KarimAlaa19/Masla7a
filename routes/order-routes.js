@@ -2,9 +2,10 @@ const express = require('express');
 const { getUserOrders,
     getOrder,
     createOrder,
-    confirmOrder,
-    canceleOrder, 
-    discardOrder} = require('../controllers/order-controller');
+    // confirmOrder,
+    canceleOrder,
+    completeOrder,
+    discardOrder } = require('../controllers/order-controller');
 const { extractingToken } = require('../controllers/user-auth');
 
 
@@ -20,6 +21,8 @@ router.post('/create-order', extractingToken, createOrder);
 router.delete('/discard-order/:orderId', extractingToken, discardOrder);
 
 // router.post('/confirm-order', extractingToken, confirmOrder);
+
+router.put('/complete-order/:orderId', completeOrder);
 
 router.put('/cancele-order/:orderId', extractingToken, canceleOrder);
 

@@ -67,10 +67,32 @@ exports.validateEditProfile = (user) => {
         name: Joi.string().min(3).max(55),
         phone_number: Joi.string().min(11).max(18),
         address: Joi.string(),
+        birthDate: Joi.string(),
+        gender: Joi.string(),
         serviceName: Joi.string().min(3),
         description: Joi.string().min(20).max(1024),
         servicePrice: Joi.number()
     });
 
     return schema.validate(user);
-}
+};
+
+
+exports.validateChangeEmail = (user) => {
+    const schema = Joi.object({
+        email: Joi.string().min(10).max(255),
+        password: passwordComplexity(complexityOptions).required()
+    });
+
+    return schema.validate(user);
+};
+
+
+exports.validateResetPassword = (user) => {
+    const schema = Joi.object({
+        current_password: passwordComplexity(complexityOptions).required(),
+        new_password: passwordComplexity(complexityOptions).required()
+    });
+
+    return schema.validate(user);
+};

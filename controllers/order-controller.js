@@ -11,15 +11,24 @@ exports.getUserOrders = async (req, res) => {
 
   try {
 
+    const user = await User.findById(req.user._id);
+
+
+    if (!user)
+      return res.status(404).json({
+        status: 'Failed',
+        message: 'The User Was Not Found'
+      });
+
     let status = req.query.status ?
       req.query.status : 'pending';
 
-    let orders;
+    let orders = [];
 
     if (req.user.role === "customer") {
       orders = await Order
         .find({
-          customerId: req.user._id,
+          customerId: user._id,
           status: status
         })
         .select({
@@ -36,10 +45,13 @@ exports.getUserOrders = async (req, res) => {
         })
         .populate('serviceId', { serviceName: true });
 
-    } else {
+    } else if (req.user.role === "serviceProvider") {
       orders = await Order
         .find({
-          serviceProviderId: req.user._id,
+          $or: [
+            { customerId: user._id },
+            { serviceProviderId: user._id }
+          ],
           status: status
         })
         .select({
@@ -56,6 +68,7 @@ exports.getUserOrders = async (req, res) => {
         })
         .populate('serviceId', { serviceName: true });
     }
+
 
     if (orders.length === 0)
       return res.status(200).json({
@@ -330,7 +343,7 @@ exports.createOrder = async (req, res) => {
 };
 
 
-exports.discardOrder = async (req, res, next) => {
+exports.discardOrder = async (req, res) => {
   try {
 
     const customer = await User.findById(req.user._id);
@@ -393,6 +406,43 @@ exports.discardOrder = async (req, res, next) => {
     })
   }
 };
+
+
+exports.completeOrder = async (req, res) => {
+
+  if (!mongoose.isValidObjectId(req.params.orderId))
+    return res.status(500).json({
+      message: 'The Order ID is Invalid.'
+    });
+
+  try {
+
+    const order = await Order.findOne({
+      _id: req.params.orderId,
+      status: { $nin: ['completed', 'canceled'] }
+    });
+
+    if (!order)
+      return res.status(400).json({
+        status: 'Failed',
+        message: 'The Order Not Found.'
+      });
+
+    order.status = 'completed';
+
+    await order.save();
+
+    res.status(201).json({
+      status: 'Succsess',
+      message: 'Order Completed Successfully'
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    })
+  }
+}
 
 
 exports.canceleOrder = async (req, res) => {

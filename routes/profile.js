@@ -2,7 +2,15 @@
 const express = require('express');
 const { extractingToken } = require('../controllers/user-auth');
 const { getAllServiceReviews, postServiceReview, deleteMyReview, updateMyReview } = require('../controllers/reviews')
-const { getUserInfo, schedule, updateProfile, changeProfilePic, resetPassword, addIntoGallery, fixingProfilePic } = require('../controllers/profile')
+const { getUserInfo, 
+    schedule, 
+    editProfile, 
+    changeProfilePic, 
+    resetPassword, 
+    addIntoGallery,
+    editServiceData, 
+    changeEmail,
+    fixingProfilePic } = require('../controllers/profile')
 const multerConfig = require("../images/images-controller/multer");
 const router = express.Router();
 
@@ -13,10 +21,18 @@ router.get('/:id', extractingToken, getUserInfo);
 router.get('/schedule/:id', extractingToken, schedule);
 
 //User update profile............PATH: '/my-profile/update-profilePic
-router.put('/update-profilePic', extractingToken, multerConfig, changeProfilePic);
+// router.put('/update-profilePic', extractingToken, multerConfig, changeProfilePic);
 
 //User update profile............PATH: '/my-profile/edit-profile
-router.put('/edit-profile', extractingToken, multerConfig, updateProfile);
+router.put('/edit-profile', extractingToken, multerConfig, editProfile);
+
+
+//User update service............PATH: '/my-profile/edit-service
+router.put('/edit-service', extractingToken, editServiceData);
+
+
+//User change email............PATH: '/my-profile/change-email
+router.put('/change-email', extractingToken, changeEmail);
 
 
 //User reset password............PATH: '/my-profile/reset-password
