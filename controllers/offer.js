@@ -19,7 +19,7 @@ exports.addAnOffer = async (req, res) => {
   return res.status(400).json('You already have an offer avaliable')
 
   const currentDate = new Date();
-  currentDate.setDate(currentDate.getDate() + 30)
+  currentDate.setDate(currentDate.getDate() + req.body.daysValidFor)
 
   const expiryDate =new Date(currentDate)
   console.log(typeof expiryDate)
@@ -33,3 +33,17 @@ exports.addAnOffer = async (req, res) => {
   await offer.save();
   res.status(200).json(offer);
 };
+
+exports.fetchAllOffers = async (req, res)=>{
+  const offers = await Offer.find()
+  const todayDate = new Date();
+  offers.map(async (offer)=>{
+    if(offer.status ==='Valid'){
+      if(offer.expiryDate <todayDate )
+      offer.status = 'Expired'
+      await offer.save();
+    }
+  })
+  const validOffers = await Offer.find({status:'Valid'});
+  return res.status(200).json(validOffers)
+}

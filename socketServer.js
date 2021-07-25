@@ -62,10 +62,10 @@ const socketServer = (server) => {
         console.log(typeof senderID);
         const sender = await User.findById(mongoose.Types.ObjectId(senderID));
         let emittedData;
-        let sentMessage
+        let sentMessage;
         if (data.type !== "order") {
           //#region saving messages to the Database
-           sentMessage = await new Message({
+          sentMessage = await new Message({
             user: senderID,
             content: data.content,
             attachment: data.attachment,
@@ -100,10 +100,9 @@ const socketServer = (server) => {
             createdAt: sentMessage.createdAt,
             role: sender.role,
           };
-
         }
-        //#endregion 
-        
+        //#endregion
+
         //#region Emmitting order data for forms
         else {
           let serviceProviderID;
@@ -118,59 +117,93 @@ const socketServer = (server) => {
           const order = await Order.findOne({
             serviceProviderId: serviceProviderID,
             customerId: customerID,
-          }).sort("-createdAt")
-          .select('-serviceProviderId -customerId -serviceId -notes -status ');
-          if(!order)return
-          emittedData = {order,role: sender.role};
+          })
+            .sort("-createdAt")
+            .select(
+              "-serviceProviderId -customerId -serviceId -notes -status "
+            );
+          if (!order) return;
+          emittedData = { order, role: sender.role };
         }
         //#endregion
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
           .emit("new-message", emittedData);
-          console.log(emittedData)
-       
+        console.log(emittedData);
+
         //#region  Send Notification
         //in-app Notification
         const receiver = await User.findById(data.to);
-        const notification = await new Notification({
-          title: "New Message",
-          body: data.content,
-          senderUser: senderID,
-          targetUsers: data.to,
-          subjectType: "Message",
-          subject: sentMessage._id,
-        }).save();
+        if (sentMessage) {
+          const notification = await new Notification({
+            title: "New Message",
+            body: data.content,
+            senderUser: senderID,
+            targetUsers: data.to,
+            subjectType: "Message",
+            subject: sentMessage._id,
+          }).save();
+          // push notifications
+          await receiver.user_send_notification(
+            notification.toFirebaseNotification()
+          );
+        }
 
-        // push notifications
-        await receiver.user_send_notification(
-          notification.toFirebaseNotification()
-        );
         //#endregion
         console.log("CHECK POINT WOOHOOO..");
-
       });
-      socket.on('decline', async (data)=>{
-        if(!data.to){
-          console.log('Receiver ID Should be sent');
-          return
+      socket.on("decline", async (data) => {
+        if (!data.to) {
+          console.log("Receiver ID Should be sent");
+          return;
         }
         const senderID = socket.decoded_token._id;
         const sender = await User.findById(mongoose.Types.ObjectId(senderID));
         let serviceProviderID;
-          let customerID;
-          if (sender.role === "serviceProvider") {
-            serviceProviderID = sender._id;
-            customerID = data.to;
-          } else {
-            serviceProviderID =data.to;
-            customerID = sender._id;
-          }
-          console.log(serviceProviderID);
-          console.log(customerID);
-        const order = await Order.findOneAndRemove({serviceProviderId: serviceProviderID,customerId: customerID, status:'pending'}).sort('-createdAt');
-      })
+        let customerID;
+        if (sender.role === "serviceProvider") {
+          serviceProviderID = sender._id;
+          customerID = data.to;
+        } else {
+          serviceProviderID = data.to;
+          customerID = sender._id;
+        }
+        console.log(serviceProviderID);
+        console.log(customerID);
+        const order = await Order.findOneAndRemove({
+          serviceProviderId: serviceProviderID,
+          customerId: customerID,
+          status: "pending",
+        }).sort("-createdAt");
+        nameSpace
+          .to(`user ${data.to}`)
+          .to(`user ${senderID}`)
+          .emit("new-message", `${sender.name} Declined The Order`);
+      });
+      socket.on("acceptance", async (data) => {
+        if (!data.to) {
+          console.log("Receiver ID Should be sent");
+          return;
+        }
+        const senderID = socket.decoded_token._id;
+        const sender = await User.findById(mongoose.Types.ObjectId(senderID));
+        let serviceProviderID;
+        let customerID;
+        if (sender.role === "serviceProvider") {
+          serviceProviderID = sender._id;
+          customerID = data.to;
+        } else {
+          serviceProviderID = data.to;
+          customerID = sender._id;
+        }
+        nameSpace
+          .to(`user ${data.to}`)
+          .to(`user ${senderID}`)
+          .emit("new-message", `${sender.name} Accepted The Order`);
+      });
     });
+
     return io;
   } catch (error) {
     console.log("error...We are at catch");
