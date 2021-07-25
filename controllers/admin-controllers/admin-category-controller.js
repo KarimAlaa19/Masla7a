@@ -721,21 +721,21 @@ function sortBy(sortFactor) {
     }
 }
 
-{
-    // to delete services with no servie providers
-    // async function deleteUnUsedService(service_id) {
-    //     const service = await Service.findByIdAndDelete(service_id)
+// {
+//     // to delete services with no servie providers
+//     async function deleteUnUsedService(service_id, categoryId) {
+//         // const service = await Service.findByIdAndDelete(service_id)
 
-    //     const category = await Category.findById(service.categoryId).populate();
-    //     console.log(category.servicesList.length)
-    //     const index = category.servicesList.indexOf(service._id);
-    //     if (index > -1) {
-    //         category.servicesList.splice(index, 1);
-    //     }
-    //     console.log(category.servicesList.length)
-    //     await category.save();
+//         const category = await Category.findById(categoryId).populate();
+//         console.log(category.servicesList.length)
+//         const index = category.servicesList.indexOf(service_id);
+//         if (index > -1) {
+//             category.servicesList.splice(index, 1);
+//         }
+//         console.log(category.servicesList.length)
+//         await category.save();
 
-    // };
+//     };
 
-    // deleteUnUsedService('60e5e3a7c3beae32f8c4ea22');
-}
+//     deleteUnUsedService('60fcfd970a64329841965345', '60f599b8b97f2e96fce9a590');
+// }

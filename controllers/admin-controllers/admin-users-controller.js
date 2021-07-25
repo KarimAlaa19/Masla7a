@@ -3,6 +3,9 @@ const Fuse = require('fuse.js');
 const User = require('../../models/user-model');
 const Order = require('../../models/order-model');
 const Service = require('../../models/service-model');
+const Category = require('../../models/category-model');
+const Complaint = require('../../models/complaint');
+const transporter = require('../../utils/emails-utils');
 const { cleanObj } = require('../../utils/filterHelpers');
 
 
@@ -52,9 +55,20 @@ exports.deleteUser = async (req, res, next) => {
             }
         }
 
-        console.log(orders);
 
         await category.save();
+
+
+        const complaints = await Complaint.find({
+            serviceProvider: user._id
+        });
+
+
+        if (complaints.length > 0) {
+            for (let i = 0; i < complaints.length; i++) {
+                await Complaint.findByIdAndRemove(complaints[i]._id);
+            }
+        }
 
     } else {
 
@@ -75,6 +89,18 @@ exports.deleteUser = async (req, res, next) => {
             await service.save();
         }
     }
+
+    await transporter.sendMail({
+        to: user.email,
+        from: 'masla7ateam@gmail.com',
+        subject: 'Complaints',
+        html: `<h1>Alert!</h1>
+        <h3>Dear ${user.name}</h3>
+        <p>
+        We are sorry to tell you that your account has been deleted
+        </p>
+        `
+    });
 
     res.status(200).json({ message: "User deleted successfully" });
 };

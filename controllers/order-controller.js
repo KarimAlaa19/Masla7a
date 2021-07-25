@@ -293,7 +293,7 @@ exports.createOrder = async (req, res) => {
 
     const checkSPOrders = await Order.findOne({
       serviceProviderId: req.body.serviceProviderId,
-      status: { $ne: 'canceled' },
+      status: { $nin: ['completed', 'canceled'] },
       orderDate: req.body.orderDate,
       $or: [
         {
