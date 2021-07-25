@@ -176,7 +176,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message",{content:sentMessage.content, type:'cancelation',dataType:'text'});
+          .emit("new-message",{content:sentMessage.content, type:'cancelation',senderID:senderID,dataType:'text'});
       });
       socket.on("acceptance", async (data) => {
         if (!data.to) {
@@ -209,7 +209,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", {content:sentMessage.content, type:'acceptance', dataType:'text'});
+          .emit("new-message", {content:sentMessage.content, type:'acceptance',senderID:senderID, dataType:'text'});
       });
       socket.on("files", async (data) => {
   const conversation= await Conversation.findById(mongoose.Types.ObjectId(data.conversationID))
