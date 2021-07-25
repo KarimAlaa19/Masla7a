@@ -169,17 +169,28 @@ const socketServer = (server) => {
           serviceProviderID = data.to;
           customerID = sender._id;
         }
-        console.log(serviceProviderID);
-        console.log(customerID);
         const order = await Order.findOneAndRemove({
           serviceProviderId: serviceProviderID,
           customerId: customerID,
           status: "pending",
         }).sort("-createdAt");
+        let conversation = await Conversation.findOne({
+          $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
+        });
+        let sentMessage = await new Message({
+          user: senderID,
+          content:  `${sender.name} Declined The Order`,
+          type: 'text',
+          conversation: conversation._id,
+        });
+        await sentMessage.save();
+        conversation.lastMessage = await sentMessage._id;
+          await conversation.save();
+
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", `${sender.name} Declined The Order`);
+          .emit("new-message",{content:sentMessage.content, type:'cancelation'});
       });
       socket.on("acceptance", async (data) => {
         if (!data.to) {
@@ -212,7 +223,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", sentMessage.content);
+          .emit("new-message", {content:sentMessage.content, type:'acceptance'});
       });
     });
 
