@@ -100,11 +100,7 @@ const socketServer = (server) => {
             serviceProviderID = data.to;
             customerID = sender._id;
           }
-          const order = await Order.findOne({
-            serviceProviderId: serviceProviderID,
-            customerId: customerID,
-          })
-            .sort("-createdAt")
+          const order = await Order.findById(mongoose.Types.ObjectId(data.content))
             .select(
               "-serviceProviderId -customerId -serviceId -notes -status "
             );
