@@ -1,9 +1,13 @@
-const Complaint = require('../models/complaint');
 const Validator = require('../validators/complaint-validator');
 const mongoose = require("mongoose");
 const _ = require("lodash");
+const Complaint = require('../models/complaint');
 const User = require("../models/user-model");
+const Service = require('../models/service-model');
+const Category = require('../models/category-model');
 const Order = require('../models/order-model');
+const transporter = require('../utils/emails-utils');
+
 
 exports.homePage = async (req, res) => {
   if (req.params.id.length != 24) return res.status(404).send("Invalid ID");
@@ -97,36 +101,186 @@ exports.changeAvailability = async (req, res) => {
 //#region Posting A Complaint
 exports.postComplaint = async (req, res) => {
 
-  const complainant = req.user;
-  if (complainant.role !== 'customer')
-    return res.status(401).json('This Section Is Only For Customers Complaints');
+  try {
 
-  const { error } = await Validator.validateComplaint(req.body);
+    const { error } = await Validator.validateComplaint(req.body);
 
-  if (error)
-    return res.status(400).json(error.details[0].message);
+    if (error)
+      return res.status(400).json(error.details[0].message);
 
-  const serviceProvider = await User
-    .findOne({ userName: new RegExp(`.*${req.body.userName}.*`, 'i') });
+    const senderUser = await User.findById(req.user._id);
 
 
-  if (!serviceProvider)
-    return res.status(400).json('There is no serviceprovider with such username');
-    
+    if (!senderUser)
+      return res.status(400).json({
+        status: 'Failed',
+        message: 'The User in The Token Was Not Found.'
+      });
 
-  const previousComplaint = await Complaint
-    .findOne({ serviceProvider: serviceProvider._id, user: complainant._id })
 
-  if (previousComplaint)
-    return res.status(400).json('You Have Already submited A compliant');
+    const serviceProvider = await User
+      .findOne({
+        userName: req.body.userName
+      });
 
-  const complaint = new Complaint({
-    serviceProvider: serviceProvider._id,
-    user: complainant._id,
-    complaintType: req.body.complaintType,
-    description: req.body.description
-  });
-  await complaint.save();
-  return res.status(200).json({ message: 'Complaint Has Been Submited Successfully' });
+
+    if (!serviceProvider ||
+      serviceProvider.role !== 'serviceProvider')
+      return res.status(400).json('There is no serviceprovider with such username');
+
+
+    const order = await Order.findOne({
+      serviceProviderId: serviceProvider._id,
+      customerId: senderUser._id,
+      status: { $in: ['completed', 'canceled'] }
+    });
+
+
+    if (!order)
+      return res.status(400).json({
+        status: 'Failed',
+        message:
+          'You Can not Complaint The Service Provider Without Making Orders With Him.'
+      });
+
+
+    const previousComplaint = await Complaint
+      .findOne({
+        serviceProvider: serviceProvider._id,
+        user: senderUser._id
+      });
+
+    if (previousComplaint)
+      return res.status(400).json('You Have Already submited A compliant');
+
+    const complaint = new Complaint({
+      serviceProvider: serviceProvider._id,
+      user: senderUser._id,
+      complaintType: req.body.complaintType,
+      description: req.body.description
+    });
+
+    await complaint.save();
+
+
+    let orders = await Order.find({
+      serviceProviderId: serviceProvider._id,
+      status: { $in: ['completed', 'canceled'] }
+    });
+
+
+    let complaints = await Complaint
+      .aggregate([
+        {
+          $match: {
+            serviceProvider: mongoose.Types.ObjectId(serviceProvider._id)
+          }
+        },
+        {
+          $group: {
+            _id: '$complaintType',
+            count: {
+              $sum: 1
+            }
+          }
+        },
+        {
+          $sort: {
+            count: -1
+          }
+        }
+      ]);
+
+    let totalComplaints = 0;
+
+
+    complaints.forEach(complaint => {
+      totalComplaints += complaint.count;
+    })
+
+
+    if (complaints.length > 0) {
+      if (orders.length >= 15) {
+        if (complaints.length >= (orders.length / 2)) {
+
+          const user = await User.findByIdAndRemove(serviceProvider._id);
+
+          const service = await Service.findOneAndRemove({ serviceProviderId: user._id })
+
+          const category = await Category.findById(service.categoryId).populate();
+
+          const index = category.servicesList.indexOf(service._id);
+          if (index > -1) {
+            category.servicesList.splice(index, 1);
+          }
+
+          orders = await Order.find({ serviceProviderId: user._id });
+
+          if (orders.length > 0) {
+            for (let i = 0; i < orders.length; i++) {
+              await Order.findByIdAndRemove(orders[i]._id);
+            }
+          }
+
+          await category.save();
+
+
+          complaints = await Complaint.find({
+            serviceProvider: user._id
+          });
+
+
+          if (complaints.length > 0) {
+            for (let i = 0; i < complaints.length; i++) {
+              await Complaint.findByIdAndRemove(complaints[i]._id);
+            }
+          }
+
+          await transporter.sendMail({
+            to: user.email,
+            from: 'masla7ateam@gmail.com',
+            subject: 'Complaints',
+            html: `<h1>Alert!</h1>
+            <h3>Dear ${serviceProvider.name}</h3>
+            <p>
+            We are sorry to tell you that your account has been deleted
+            </p>
+            `
+          });
+
+          return res.status(200).json({
+            message: 'Complaint Has Been Submited Successfully',
+          });
+        }
+      }
+    }
+
+
+    await transporter.sendMail({
+      to: serviceProvider.email,
+      from: 'masla7ateam@gmail.com',
+      subject: 'Complaints',
+      html: `<h1>Alert!</h1>
+      <h3>Dear ${serviceProvider.name}</h3>
+      <p>We are sorry to tell you that you have ${totalComplaints} complaints about the orders you placed, 
+      please try to resolve these complaints, otherwise, your account will be deleted when 
+      you reach ${(orders.length <= 15) ? 15 : Math.ceil(orders.length / 2)} complaints.
+      </p>
+      <p>
+      <strong>Note:</strong> The most frequent complaint is "${complaints[0]._id}"
+      </p>
+      `
+    });
+
+
+    return res.status(200).json({
+      message: 'Complaint Has Been Submited Successfully',
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
 }
 //#endregion
