@@ -82,7 +82,7 @@ const socketServer = (server) => {
             messageID: sentMessage._id,
             content: data.content,
             sender: senderID,
-            type: data.type,
+            type: 'text',
             createdAt: sentMessage.createdAt,
             role: sender.role,
           };
@@ -109,7 +109,7 @@ const socketServer = (server) => {
               "-serviceProviderId -customerId -serviceId -notes -status "
             );
           if (!order) return;
-          emittedData = { order, role: sender.role, senderID: sender._id };
+          emittedData = { order, role: sender.role, senderID: sender._id, dataType:'order' };
         }
         //#endregion
         nameSpace
@@ -176,7 +176,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message",{content:sentMessage.content, type:'cancelation'});
+          .emit("new-message",{content:sentMessage.content, type:'cancelation',dataType:'text'});
       });
       socket.on("acceptance", async (data) => {
         if (!data.to) {
@@ -209,15 +209,17 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", {content:sentMessage.content, type:'acceptance'});
+          .emit("new-message", {content:sentMessage.content, type:'acceptance', dataType:'text'});
       });
       socket.on("files", async (data) => {
   const conversation= await Conversation.findById(mongoose.Types.ObjectId(data.conversationID))
         const message = await Message.findOne({conversation:conversation._id, type:'image'}).sort('-createdAt')
+        const senderID = socket.decoded_token._id;
+        const sender = await User.findById(mongoose.Types.ObjectId(senderID));
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", {attachment:message.attachment, type:'files'});
+          .emit("new-message", {attachment:message.attachment, type:'files', dataType:'image', createdAt: message.createdAt, senderID:senderID});
       });
     });
 
