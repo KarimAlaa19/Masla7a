@@ -3,19 +3,21 @@ const Schema = mongoose.Schema;
 
 const offerSchema = new Schema(
   {
-    service: {
-      type: mongoose.Types.ObjectId,
-      ref: "Service",
-      required: true,
-    },
     serviceProvider: {
       type: mongoose.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    percentage: {
-      type: Number,
+    title: {
+      type: String,
       required: true,
+    },
+    description:{
+      type:String,
+      required:true
+    },
+    cover:{
+      type:String
     },
     daysValidFor: {
       type: Number,

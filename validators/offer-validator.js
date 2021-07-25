@@ -2,7 +2,9 @@ const Joi = require('joi');
 
 exports.validateOffer = (offer) => {
     const schema = Joi.object({
-        percentage: Joi.number().required(),
+        title: Joi.string().required(),
+        description: Joi.string().required(),
+        cover: Joi.string(),
         daysValidFor: Joi.number().required(),
     });
 

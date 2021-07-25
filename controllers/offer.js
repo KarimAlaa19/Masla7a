@@ -2,7 +2,9 @@ const { Offer } = require("../models/offers");
 const Order = require("../models/order-model");
 const User = require("../models/user-model");
 const service = require("../models/service-model");
-const _ = require('lodash')
+const _ = require("lodash");
+const cloud = require("../images/images-controller/cloudinary");
+const fs = require("fs");
 const { validateOffer } = require("../validators/offer-validator");
 
 exports.addAnOffer = async (req, res) => {
@@ -26,13 +28,22 @@ exports.addAnOffer = async (req, res) => {
   const expiryDate = new Date(currentDate);
   console.log(typeof expiryDate);
   offer = await new Offer({
-    service: serviceProvider.serviceId._id,
     serviceProvider: serviceProvider._id,
-    percentage: req.body.percentage,
+    title: req.body.title,
+    description: req.body.description,
     daysValidFor: req.body.daysValidFor,
     expireAt: expiryDate,
   });
   await offer.save();
+  if (req.files) {
+      if (req.files[0].fieldname === "cover") {
+        const result = await cloud.uploads(req.files[0].path);
+        offer.cover = result.url;
+        fs.unlinkSync(req.files[0].path);
+        await offer.save();
+    }
+  }
+
   res.status(200).json(offer);
 };
 
@@ -45,19 +56,16 @@ exports.fetchAllOffers = async (req, res) => {
         console.log("yaaay");
         offer.status = "Expired";
         await offer.save();
-        offer=null
+        offer = null;
       }
     }
   });
-  const index = _.findKey(
-    offers,
-    _.matchesProperty("status", 'Expired')
-  );
+  const index = _.findKey(offers, _.matchesProperty("status", "Expired"));
   if (index !== undefined) {
     offers.splice(index, 1);
   }
 
-  console.log(offers)
+  console.log(offers);
 
-  return res.status(200).json({offers});
+  return res.status(200).json({ offers });
 };
