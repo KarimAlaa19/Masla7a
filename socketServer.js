@@ -109,7 +109,7 @@ const socketServer = (server) => {
               "-serviceProviderId -customerId -serviceId -notes -status "
             );
           if (!order) return;
-          emittedData = { order, role: sender.role, senderID: sender._id, dataType:'order' };
+          emittedData = { order, role: sender.role, senderID: sender._id, dataType:'order', receiverId: data.to };
         }
         //#endregion
         nameSpace
