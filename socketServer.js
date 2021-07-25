@@ -197,10 +197,22 @@ const socketServer = (server) => {
           serviceProviderID = data.to;
           customerID = sender._id;
         }
+        let conversation = await Conversation.findOne({
+          $or: [{ users: [senderID, data.to] }, { users: [data.to, senderID] }],
+        });
+        let sentMessage = await new Message({
+          user: senderID,
+          content: `${sender.name} Accepted The Order`,
+          type: 'text',
+          conversation: conversation._id,
+        });
+        await sentMessage.save();
+        conversation.lastMessage = await sentMessage._id;
+          await conversation.save();
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", `${sender.name} Accepted The Order`);
+          .emit("new-message", sentMessage.content);
       });
     });
 
