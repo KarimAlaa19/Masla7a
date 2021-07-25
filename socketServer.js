@@ -78,20 +78,6 @@ const socketServer = (server) => {
           conversation.lastMessage = await sentMessage._id;
           await conversation.save();
 
-          //Recieving files
-          socket.on("files", multerconfig, async (req, res) => {
-            if (req.files) {
-              if (req.files[i].fieldname === "image") {
-                const result = await cloud.uploads(req.files[i].path);
-                sentMessage.attachment = result.url;
-                fs.unlinkSync(req.files[i].path);
-                await sentMessage.save();
-                // user.profilePic = result.url;
-                res.status(200).json("Successfully uploaded an image");
-              }
-            }
-          });
-
           emittedData = {
             messageID: sentMessage._id,
             content: data.content,
@@ -224,6 +210,14 @@ const socketServer = (server) => {
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
           .emit("new-message", {content:sentMessage.content, type:'acceptance'});
+      });
+      socket.on("files", async (data) => {
+  const conversation= await Conversation.findById(mongoose.Types.ObjectId(data.conversationID))
+        const message = await Message.findOne({conversation:conversation._id, type:'image'}).sort('-createdAt')
+        nameSpace
+          .to(`user ${data.to}`)
+          .to(`user ${senderID}`)
+          .emit("new-message", {attachment:message.attachment, type:'files'});
       });
     });
 
