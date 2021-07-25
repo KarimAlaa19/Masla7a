@@ -31,7 +31,7 @@ exports.fetchMessages = async (req, res, next) => {
       conversation: conversationID,
     }
   ).populate('user', 'name profilePic')
-  .select('content attachment createdAt')
+  .select('content attachment createdAt type')
   .sort('-createdAt');
 
   res.status(200).json(messages);
