@@ -69,7 +69,7 @@ const socketServer = (server) => {
             user: senderID,
             content: data.content,
             attachment: data.attachment,
-            type: data.type,
+            type: 'text',
             conversation: conversation._id,
           });
           await sentMessage.save();
