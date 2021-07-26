@@ -85,6 +85,7 @@ const socketServer = (server) => {
             type: 'text',
             createdAt: sentMessage.createdAt,
             role: sender.role,
+            conversationID: conversation._id
           };
         }
         //#endregion
