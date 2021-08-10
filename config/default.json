@@ -1,6 +1,5 @@
 { 
     "jwtPrivateKey" :"mySecretKey",
     "GEOCODER_PROVIDER": "here",
-    "GEOCODER_API_KEY": "6KOoPMk4EITwtF-evyr0-mZFv_4F0fP2c5X0G-B8KpE",
-    "SENDGRID_API_KEY": "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"
+    "GEOCODER_API_KEY": "6KOoPMk4EITwtF-evyr0-mZFv_4F0fP2c5X0G-B8KpE"
 }

@@ -5,7 +5,7 @@ const Order = require('../../models/order-model');
 const Service = require('../../models/service-model');
 const Category = require('../../models/category-model');
 const Complaint = require('../../models/complaint');
-const transporter = require('../../utils/emails-utils');
+// const transporter = require('../../utils/emails-utils');
 const { cleanObj } = require('../../utils/filterHelpers');
 
 
@@ -90,17 +90,17 @@ exports.deleteUser = async (req, res, next) => {
         }
     }
 
-    await transporter.sendMail({
-        to: user.email,
-        from: 'masla7ateam@gmail.com',
-        subject: 'Complaints',
-        html: `<h1>Alert!</h1>
-        <h3>Dear ${user.name}</h3>
-        <p>
-        We are sorry to tell you that your account has been deleted
-        </p>
-        `
-    });
+    // await transporter.sendMail({
+    //     to: user.email,
+    //     from: 'masla7ateam@gmail.com',
+    //     subject: 'Complaints',
+    //     html: `<h1>Alert!</h1>
+    //     <h3>Dear ${user.name}</h3>
+    //     <p>
+    //     We are sorry to tell you that your account has been deleted
+    //     </p>
+    //     `
+    // });
 
     res.status(200).json({ message: "User deleted successfully" });
 };

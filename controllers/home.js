@@ -6,7 +6,7 @@ const User = require("../models/user-model");
 const Service = require('../models/service-model');
 const Category = require('../models/category-model');
 const Order = require('../models/order-model');
-const transporter = require('../utils/emails-utils');
+// const transporter = require('../utils/emails-utils');
 
 
 exports.homePage = async (req, res) => {
@@ -236,17 +236,17 @@ exports.postComplaint = async (req, res) => {
             }
           }
 
-          await transporter.sendMail({
-            to: user.email,
-            from: 'masla7ateam@gmail.com',
-            subject: 'Complaints',
-            html: `<h1>Alert!</h1>
-            <h3>Dear ${serviceProvider.name}</h3>
-            <p>
-            We are sorry to tell you that your account has been deleted
-            </p>
-            `
-          });
+          // await transporter.sendMail({
+          //   to: user.email,
+          //   from: 'masla7ateam@gmail.com',
+          //   subject: 'Complaints',
+          //   html: `<h1>Alert!</h1>
+          //   <h3>Dear ${serviceProvider.name}</h3>
+          //   <p>
+          //   We are sorry to tell you that your account has been deleted
+          //   </p>
+          //   `
+          // });
 
           return res.status(200).json({
             message: 'Complaint Has Been Submited Successfully',
@@ -256,21 +256,21 @@ exports.postComplaint = async (req, res) => {
     }
 
 
-    await transporter.sendMail({
-      to: serviceProvider.email,
-      from: 'masla7ateam@gmail.com',
-      subject: 'Complaints',
-      html: `<h1>Alert!</h1>
-      <h3>Dear ${serviceProvider.name}</h3>
-      <p>We are sorry to tell you that you have ${totalComplaints} complaints about the orders you placed, 
-      please try to resolve these complaints, otherwise, your account will be deleted when 
-      you reach ${(orders.length <= 15) ? 15 : Math.ceil(orders.length / 2)} complaints.
-      </p>
-      <p>
-      <strong>Note:</strong> The most frequent complaint is "${complaints[0]._id}"
-      </p>
-      `
-    });
+    // await transporter.sendMail({
+    //   to: serviceProvider.email,
+    //   from: 'masla7ateam@gmail.com',
+    //   subject: 'Complaints',
+    //   html: `<h1>Alert!</h1>
+    //   <h3>Dear ${serviceProvider.name}</h3>
+    //   <p>We are sorry to tell you that you have ${totalComplaints} complaints about the orders you placed, 
+    //   please try to resolve these complaints, otherwise, your account will be deleted when 
+    //   you reach ${(orders.length <= 15) ? 15 : Math.ceil(orders.length / 2)} complaints.
+    //   </p>
+    //   <p>
+    //   <strong>Note:</strong> The most frequent complaint is "${complaints[0]._id}"
+    //   </p>
+    //   `
+    // });
 
 
     return res.status(200).json({
