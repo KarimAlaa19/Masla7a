@@ -29,13 +29,10 @@ const addUser = async (req, res) => {
     address: req.body.address,
   });
   if (req.body.deviceToken) {
-    console.log('helloooo')
     let pushToken = {
       deviceToken: req.body.deviceToken
     }
-    console.log('Before pushing ' + pushToken)
     await user.pushTokens.push(pushToken);
-    console.log(user.pushTokens[0]);
   }
   // Reading files
   if (req.files) {
@@ -66,7 +63,6 @@ exports.addingUser = async (req, res, next) => {
         .status(400)
         .json({ message: "Error Message...The Request Body Is Empty!" });
 
-    console.log(req.body);
     //Normal User Handling
     if (req.body.role === "customer") {
       const { error } = validator.validateSignUp(req.body);

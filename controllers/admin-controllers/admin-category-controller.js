@@ -4,6 +4,8 @@ const Fuse = require('fuse.js');
 const fs = require("fs");
 const cloud = require("../../images/images-controller/cloudinary");
 const categoryValidator = require("../../validators/category-validator");
+const User = require('../../models/user-model')
+const { Notification } = require("../../models/notification");
 const Category = require("../../models/category-model");
 const Service = require('../../models/service-model');
 const Order = require('../../models/order-model');
@@ -421,7 +423,25 @@ exports.deleteCategory = async (req, res) => {
 
             othersCategory.servicesList.push(servcieId);
         });
-
+        //Notifications
+        deletedCategory.servicesList.map(async (serviceID) => {
+            console.log('Notification')
+            const serviceProvider = await User.findOne({serviceId: serviceID});
+            const notification = await new Notification({
+                title: "Maslaha Admins",
+                body: `Maslaha Admins Wants To Inform You That Your Service has been moved to Other Services Category`,
+                senderUser: req.user._id,
+                targetUsers:  serviceProvider._id,
+                subjectType: "Category",
+                subject: othersCategory._id,
+              })
+              await notification.save();
+        
+            //push firebase notification
+            await serviceProvider.user_send_notification(
+                notification.toFirebaseNotification()
+              );
+        });
         await othersCategory.save();
 
         res.status(201).json({

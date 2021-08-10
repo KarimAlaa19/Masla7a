@@ -20,7 +20,7 @@ exports.homePage = async (req, res) => {
 
   const userInfo = await User.findById(userID)
     .populate("users")
-    .select("name userName profilePic location");
+    .select("name userName profilePic location role");
 
   res.status(200).json({ user: userInfo });
 };
@@ -136,12 +136,7 @@ exports.postComplaint = async (req, res) => {
     });
 
 
-    if (!order)
-      return res.status(400).json({
-        status: 'Failed',
-        message:
-          'You Can not Complaint The Service Provider Without Making Orders With Him.'
-      });
+    
 
 
     const previousComplaint = await Complaint

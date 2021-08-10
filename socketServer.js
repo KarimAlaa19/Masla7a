@@ -85,6 +85,7 @@ const socketServer = (server) => {
             type: 'text',
             createdAt: sentMessage.createdAt,
             role: sender.role,
+            conversationID: conversation._id
           };
         }
         //#endregion
@@ -100,16 +101,12 @@ const socketServer = (server) => {
             serviceProviderID = data.to;
             customerID = sender._id;
           }
-          const order = await Order.findOne({
-            serviceProviderId: serviceProviderID,
-            customerId: customerID,
-          })
-            .sort("-createdAt")
+          const order = await Order.findById(mongoose.Types.ObjectId(data.content))
             .select(
               "-serviceProviderId -customerId -serviceId -notes -status "
             );
           if (!order) return;
-          emittedData = { order, role: sender.role, senderID: sender._id, dataType:'order' };
+          emittedData = { order, role: sender.role, senderID: sender._id, dataType:'order', receiverId: data.to };
         }
         //#endregion
         nameSpace
@@ -176,7 +173,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message",{content:sentMessage.content, type:'cancelation',senderID:senderID,dataType:'text'});
+          .emit("new-message",{content:sentMessage.content, type:'cancelation',senderID:senderID,dataType:'text', createdAt:sentMessage.createdAt});
       });
       socket.on("acceptance", async (data) => {
         if (!data.to) {
@@ -209,7 +206,7 @@ const socketServer = (server) => {
         nameSpace
           .to(`user ${data.to}`)
           .to(`user ${senderID}`)
-          .emit("new-message", {content:sentMessage.content, type:'acceptance',senderID:senderID, dataType:'text'});
+          .emit("new-message", {content:sentMessage.content, type:'acceptance',senderID:senderID, dataType:'text', createdAt:sentMessage.createdAt});
       });
       socket.on("files", async (data) => {
   const conversation= await Conversation.findById(mongoose.Types.ObjectId(data.conversationID))
